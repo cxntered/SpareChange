@@ -2,7 +2,7 @@
 
 # `SpareChange`
 
-_"changing" Sparebeat maps into osu!mania beatmaps... get it? haha..._
+_"changing" Sparebeat maps into osu!mania beatmaps... get it? ahaha..._
 
 </div>
 
@@ -21,4 +21,6 @@ _not comprehensive at all, just a rough list for now_
 - [x] Fetch Sparebeat map from both beta and stable
 - [x] Parse Sparebeat map JSON
 - [ ] Convert Sparebeat map to an osu!mania beatmap
+- [ ] Properly convert Sparebeat BPM & speed changes to osu!mania SV
 - [ ] Allow custom Sparebeat maps to be converted
+- [ ] Allow osu!mania beatmaps to be converted into Sparebeat maps

@@ -2,28 +2,28 @@
 
 The Sparebeat map format is a JSON object with the following structure:
 
-| Key                     | Type                      | Description                                                  |
-| :---------------------- | :------------------------ | :----------------------------------------------------------- |
-| `id`                    | `string`                  | Unique map identifier.                                       |
-| `title`                 | `string`                  | The title of the song.                                       |
-| `artist`                | `string`                  | The artist of the song.                                      |
-| `url`                   | `string`                  | An author-provided URL.                                      |
-| `bgColor`               | `string[]`                | (Optional) An array of background colors in hex format.      |
-| `beats`                 | `number`                  | (Optional) The number of beats per measure, defaults to 4(?) |
-| `bpm`                   | `number`                  | The beats per minute of the song.                            |
-| `startTime`             | `number`                  | The song's start time in milliseconds.                       |
-| **`level`**             | `object`                  | Contains the difficulty rating or name for each level.       |
-| &nbsp;&nbsp;`└─ easy`   | `number` or `string`      | Difficulty rating/name for the "easy" level.                 |
-| &nbsp;&nbsp;`└─ normal` | `number` or `string`      | Difficulty rating/name for the "normal" level.               |
-| &nbsp;&nbsp;`└─ hard`   | `number` or `string`      | Difficulty rating/name for the "hard" level.                 |
-| **`map`**               | `object`                  | Map data for each difficulty.                                |
-| &nbsp;&nbsp;`└─ easy`   | `Array<string \| object>` | Map data for the "easy" map.                                 |
-| &nbsp;&nbsp;`└─ normal` | `Array<string \| object>` | Map data for the "normal" map.                               |
-| &nbsp;&nbsp;`└─ hard`   | `Array<string \| object>` | Map data for the "hard" map.                                 |
+| Key                     | Type                      | Description                                                                |
+| :---------------------- | :------------------------ | :------------------------------------------------------------------------- |
+| `id`                    | `string`                  | Unique map identifier.                                                     |
+| `title`                 | `string`                  | The title of the song.                                                     |
+| `artist`                | `string`                  | The artist of the song.                                                    |
+| `url`                   | `string`                  | An author-provided URL.                                                    |
+| `bgColor`               | `string[]`                | (Optional) Start and end hex colors for the linear gradient background.    |
+| `beats`                 | `number`                  | (Optional) The number of beats per measure, defaults to 4.                 |
+| `bpm`                   | `number`                  | The beats per minute of the song.                                          |
+| `startTime`             | `number`                  | Determines where sections will start in the map. Measured in milliseconds. |
+| **`level`**             | `object`                  | Contains the difficulty rating or name for each level.                     |
+| &nbsp;&nbsp;`└─ easy`   | `number` or `string`      | Difficulty rating/name for the "easy" level.                               |
+| &nbsp;&nbsp;`└─ normal` | `number` or `string`      | Difficulty rating/name for the "normal" level.                             |
+| &nbsp;&nbsp;`└─ hard`   | `number` or `string`      | Difficulty rating/name for the "hard" level.                               |
+| **`map`**               | `object`                  | Map data for each difficulty.                                              |
+| &nbsp;&nbsp;`└─ easy`   | `Array<string \| object>` | Map data for the "easy" map.                                               |
+| &nbsp;&nbsp;`└─ normal` | `Array<string \| object>` | Map data for the "normal" map.                                             |
+| &nbsp;&nbsp;`└─ hard`   | `Array<string \| object>` | Map data for the "hard" map.                                               |
 
 Each level's difficulty rating or name is set by the map author, with seemingly no restrictions. In practice, no levels are named and instead use an arbitrary(?) difficulty rating. In beta, setting a level to 0 will gray it out, while setting it to -1 or a string will hide it entirely.
 
-Each difficulty's map data is an array of strings and/or objects. Strings contain the note data of each section, where a section is 4 measures long. Objects contain map settings, which include toggling on or off the bar line, changing the BPM, and changing the speed of the map.
+Each difficulty's map data is an array of strings and/or objects. Strings contain the note data of each section, where a section is **up to 4 measures long** (16 rows). Objects contain map settings, which include toggling on or off the bar line, changing the BPM, and changing the speed of the map. Map settings do not create new sections, but apply from that point onwards.
 
 ### Section Format
 
@@ -43,15 +43,21 @@ Parentheses `()` represent 24<sup>th</sup> notes, where any measures inside the 
 
 Square brackets `[]` represent bind zones, where any rows inside the brackets will prevent "ghost tapping" (pressing keys when there are no notes). If there is no closing bracket, the bind zone will persist.
 
+If there is nothing before a comma, that represents an empty row. For example, `"34,,23"` represents 3 rows, where the first row has 2 notes, the second row is empty, and the third row has 2 notes.
+
+Importantly, a section string can be up to 4 measures long. If a section is shorter than 4 measures, the next section will continue from the last row of the previous section. For example, if a section is only 2 measures long, the next section will start from the ninth row and will not create a new section.
+
 ### Map Options Format
 
 Map options are objects with the following structure:
 
-| Key       | Type      | Description                              |
-| :-------- | :-------- | :--------------------------------------- |
-| `barLine` | `boolean` | Whether to show the bar line in the map. |
-| `bpm`     | `number`  | Sets the BPM from that point onwards.    |
-| `speed`   | `number`  | Sets the speed from that point onwards.  |
+| Key       | Type      | Description                                      |
+| :-------- | :-------- | :----------------------------------------------- |
+| `barLine` | `boolean` | Toggles the bar line visibility from that point. |
+| `bpm`     | `number`  | Sets the BPM from that point onwards.            |
+| `speed`   | `number`  | Sets the speed from that point onwards.          |
+
+Each of these options can be set to a new value at any point in the map, and will apply from that point onwards.
 
 ## Fetching a map's data
 
