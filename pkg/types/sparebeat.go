@@ -6,7 +6,7 @@ type SparebeatMap struct {
 	Artist    string   `json:"artist"`
 	URL       string   `json:"url"`
 	BgColor   []string `json:"bgColor,omitempty"`
-	Beats     int      `json:"beats,omitempty"`
+	Beats     uint     `json:"beats,omitempty"`
 	BPM       float64  `json:"bpm"`
 	StartTime int      `json:"startTime"`
 	Level     Level    `json:"level"`

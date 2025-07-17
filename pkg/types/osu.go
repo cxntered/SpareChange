@@ -100,7 +100,7 @@ type TimingPointsSection struct {
 type TimingPoint struct {
 	Time        int
 	BeatLength  float64
-	Meter       int
+	Meter       uint
 	SampleSet   int
 	SampleIndex int
 	Volume      int

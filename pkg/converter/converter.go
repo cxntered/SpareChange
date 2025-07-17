@@ -72,56 +72,68 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuMap, l
 		mapData = sbMap.Map.Hard
 	}
 
-	for i, elem := range mapData {
+	var bpm float64 = sbMap.BPM
+	var rowCount uint = 0
+
+	for _, elem := range mapData {
 		switch v := elem.(type) {
 		case string:
 			// TODO: parse rows
+			rowCount++
 
 		case map[string]interface{}:
-			var opts types.MapOptions
-			mapBytes, _ := json.Marshal(v)
-			if err := json.Unmarshal(mapBytes, &opts); err == nil {
-				// TODO: current bpm can change, need to track it somewhere
-				bpm := sbMap.BPM
-				if opts.BPM != nil {
-					bpm = *opts.BPM
-				}
-				beatLength := 60 * 1000 / bpm
-
-				var beats int
-				if sbMap.Beats != 0 {
-					beats = sbMap.Beats
-				} else {
-					beats = 4
-				}
-				time := int((i + 1) * beats * int(beatLength))
-
-				if opts.BPM != nil {
-					osuFile.TimingPoints.TimingPoints = append(osuFile.TimingPoints.TimingPoints, types.TimingPoint{
-						Time:        time,
-						BeatLength:  beatLength,
-						Meter:       beats,
-						SampleSet:   0,
-						SampleIndex: 0,
-						Volume:      100,
-						Uninherited: true,
-						Effects:     0,
-					})
-				} else if opts.Speed != nil {
-					osuFile.TimingPoints.TimingPoints = append(osuFile.TimingPoints.TimingPoints, types.TimingPoint{
-						Time:        time,
-						BeatLength:  -100 / *opts.Speed,
-						Meter:       beats,
-						SampleSet:   0,
-						SampleIndex: 0,
-						Volume:      100,
-						Uninherited: false,
-						Effects:     0,
-					})
-				}
+			timingPoint := parseMapOptions(v, sbMap, &bpm, rowCount)
+			if timingPoint != (types.TimingPoint{}) {
+				osuFile.TimingPoints.TimingPoints = append(osuFile.TimingPoints.TimingPoints, timingPoint)
 			}
 		}
 	}
 
 	return osuFile, nil
+}
+
+func parseMapOptions(mapOptions map[string]interface{}, sbMap types.SparebeatMap, bpm *float64, rowCount uint) types.TimingPoint {
+	var opts types.MapOptions
+	mapBytes, _ := json.Marshal(mapOptions)
+	if err := json.Unmarshal(mapBytes, &opts); err == nil {
+		if opts.BPM != nil {
+			*bpm = *opts.BPM
+		}
+		beatLength := 60 * 1000 / *bpm
+
+		var beats uint
+		if sbMap.Beats != 0 {
+			beats = sbMap.Beats
+		} else {
+			beats = 4
+		}
+
+		time := sbMap.StartTime + int(float64(rowCount*beats)*beatLength/16)
+
+		if opts.BPM != nil {
+			return types.TimingPoint{
+				Time:        time,
+				BeatLength:  beatLength,
+				Meter:       beats,
+				SampleSet:   0,
+				SampleIndex: 0,
+				Volume:      100,
+				Uninherited: true,
+				Effects:     0,
+			}
+		} else if opts.Speed != nil {
+			return types.TimingPoint{
+				Time:        time,
+				BeatLength:  -100 / *opts.Speed,
+				Meter:       beats,
+				SampleSet:   0,
+				SampleIndex: 0,
+				Volume:      100,
+				Uninherited: false,
+				Effects:     0,
+			}
+		}
+	}
+
+	return types.TimingPoint{}
 }
