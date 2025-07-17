@@ -2,32 +2,24 @@
 
 The Sparebeat map format is a JSON object with the following structure:
 
-```json
-{
-    "id": string,        // Unique map identifier (not present in beta)
-    "title": string,     // Title of the song
-    "artist": string,    // Artist of the song
-    "url": string,       // Author-provided URL
-    "bgColor": string[], // Background colors in hex (optional)
-    "beats": number,     // Number of beats in the song (optional, defaults to 4(?))
-    "bpm": number,       // Beats per minute
-    "startTime": number, // Start time of the song (in milliseconds)
-
-    // Level difficulty rating OR level name
-    "level": {
-        "easy": number | string,
-        "normal": number | string,
-        "hard": number | string
-    },
-
-    // Map data for each difficulty
-    "map": {
-        "easy": Array<string | object>,
-        "normal": Array<string | object>,
-        "hard": Array<string | object>
-    }
-}
-```
+| Key                     | Type                      | Description                                                  |
+| :---------------------- | :------------------------ | :----------------------------------------------------------- |
+| `id`                    | `string`                  | Unique map identifier.                                       |
+| `title`                 | `string`                  | The title of the song.                                       |
+| `artist`                | `string`                  | The artist of the song.                                      |
+| `url`                   | `string`                  | An author-provided URL.                                      |
+| `bgColor`               | `string[]`                | (Optional) An array of background colors in hex format.      |
+| `beats`                 | `number`                  | (Optional) The number of beats per measure, defaults to 4(?) |
+| `bpm`                   | `number`                  | The beats per minute of the song.                            |
+| `startTime`             | `number`                  | The song's start time in milliseconds.                       |
+| **`level`**             | `object`                  | Contains the difficulty rating or name for each level.       |
+| &nbsp;&nbsp;`└─ easy`   | `number` or `string`      | Difficulty rating/name for the "easy" level.                 |
+| &nbsp;&nbsp;`└─ normal` | `number` or `string`      | Difficulty rating/name for the "normal" level.               |
+| &nbsp;&nbsp;`└─ hard`   | `number` or `string`      | Difficulty rating/name for the "hard" level.                 |
+| **`map`**               | `object`                  | Map data for each difficulty.                                |
+| &nbsp;&nbsp;`└─ easy`   | `Array<string \| object>` | Map data for the "easy" map.                                 |
+| &nbsp;&nbsp;`└─ normal` | `Array<string \| object>` | Map data for the "normal" map.                               |
+| &nbsp;&nbsp;`└─ hard`   | `Array<string \| object>` | Map data for the "hard" map.                                 |
 
 Each level's difficulty rating or name is set by the map author, with seemingly no restrictions. In practice, no levels are named and instead use an arbitrary(?) difficulty rating. In beta, setting a level to 0 will gray it out, while setting it to -1 or a string will hide it entirely.
 
@@ -55,13 +47,11 @@ Square brackets `[]` represent bind zones, where any rows inside the brackets wi
 
 Map options are objects with the following structure:
 
-```json
-{
-    "barLine": boolean, // Whether to show the bar line
-    "bpm": number,      // Sets the BPM from that point onwards
-    "speed": number     // Sets the speed from that point onwards
-}
-```
+| Key       | Type      | Description                              |
+| :-------- | :-------- | :--------------------------------------- |
+| `barLine` | `boolean` | Whether to show the bar line in the map. |
+| `bpm`     | `number`  | Sets the BPM from that point onwards.    |
+| `speed`   | `number`  | Sets the speed from that point onwards.  |
 
 ## Fetching a map's data
 

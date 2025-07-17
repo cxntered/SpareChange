@@ -17,7 +17,7 @@ _"changing" Sparebeat maps into osu!mania beatmaps... get it? haha..._
 
 _not comprehensive at all, just a rough list for now_
 
-- [ ] Fetch Sparebeat map from both beta and stable
-- [ ] Parse Sparebeat map JSON
+- [x] Fetch Sparebeat map from both beta and stable
+- [x] Parse Sparebeat map JSON
 - [ ] Convert Sparebeat map to an osu!mania beatmap
 - [ ] Allow custom Sparebeat maps to be converted
