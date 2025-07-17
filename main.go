@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/cxntered/SpareChange/pkg/converter"
 	"github.com/cxntered/SpareChange/pkg/types"
 	flag "github.com/spf13/pflag"
 )
@@ -54,4 +55,12 @@ func main() {
 	}
 
 	fmt.Printf("Successfully fetched map: %+v\n", mapData.Title)
+
+	osuMap, err := converter.ConvertSparebeatToOsu(mapData)
+	if err != nil {
+		fmt.Printf("Error converting Sparebeat map to osu! format: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Successfully converted map to osu! format: %+v\n", osuMap.Difficulties[len(osuMap.Difficulties)-1])
 }

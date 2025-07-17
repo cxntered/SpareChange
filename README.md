@@ -12,6 +12,7 @@ _"changing" Sparebeat maps into osu!mania beatmaps... get it? haha..._
 - [osu!](https://osu.ppy.sh)
 - [Sparebeat Map Editor](https://github.com/bo-yakitarako/sparebeat-map-editor)
 - [.osu file format specification](<https://osu.ppy.sh/wiki/en/Client/File_formats/osu_(file_format)>)
+- [osu-parser](https://github.com/Waffle-osu/osu-parser)
 
 ## To Do
 
