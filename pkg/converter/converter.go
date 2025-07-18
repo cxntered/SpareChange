@@ -83,11 +83,12 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuMap, l
 	} else {
 		beats = 4
 	}
+	holdNotes := make(map[uint]int) // column index -> start time
 
 	for _, elem := range mapData {
 		switch v := elem.(type) {
 		case string:
-			hitObjects := parseSections(v, sbMap, &rowCount, &bpm, beats)
+			hitObjects := parseSections(v, sbMap, &rowCount, &bpm, beats, holdNotes)
 			osuFile.HitObjects.List = append(osuFile.HitObjects.List, hitObjects...)
 
 		case map[string]interface{}:
@@ -101,7 +102,7 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuMap, l
 	return osuFile, nil
 }
 
-func parseSections(section string, sbMap types.SparebeatMap, rowCount *uint, bpm *float64, beats uint) []types.HitObject {
+func parseSections(section string, sbMap types.SparebeatMap, rowCount *uint, bpm *float64, beats uint, holdNotes map[uint]int) []types.HitObject {
 	rows := strings.Split(section, ",")
 	beatLength := 60 * 1000 / *bpm
 
@@ -111,34 +112,57 @@ func parseSections(section string, sbMap types.SparebeatMap, rowCount *uint, bpm
 		time := int(float64(*rowCount*beats)*beatLength/16) - sbMap.StartTime
 		notes := strings.SplitSeq(row, "")
 
+		// TODO: handle 24th notes & bind zones
 		for note := range notes {
 			if isNumeric(note) { // normal notes
-				key, _ := strconv.Atoi(note)
-				if key > 4 {
-					key -= 4
+				lane, _ := strconv.Atoi(note)
+				if lane > 4 { // convert attack notes into normal notes
+					lane -= 4
 				}
 
 				hitObjects = append(hitObjects, types.HitObject{
-					XPosition: int16((512 * key / 4) - 64),
+					XPosition: int16((512 * lane / 4) - 64),
 					YPosition: 192,
 					Time:      time,
 					Type:      types.HitCircle,
-					HitSound:  100,
+					HitSound:  types.HitSoundNormal,
 					HitSample: types.HitSample{
-						NormalSet:   1,
+						NormalSet:   0,
 						AdditionSet: 0,
 						Index:       0,
-						Volume:      100,
+						Volume:      0,
 					},
 				})
 			} else { // hold notes
-				// TODO: handle hold notes
-				// osu!mania doesn't have "hold note starts" and "hold note ends"
-				// instead, it has a single note that represents the entire hold with an endTime
-				// we need to get the hold note end to calculate the end time
+				// convert letter into alphabet index (i.e. lane)
+				lane := uint(unicode.ToLower(rune(note[0]))) - uint('a') + 1
 
-				// // convert letter into alphabet index
-				// index := int(unicode.ToLower(rune(note[0]))) - int('a') + 1
+				if lane <= 4 {
+					holdNotes[lane] = time
+				} else {
+					lane -= 4
+					startTime, ok := holdNotes[lane]
+
+					if ok {
+						hitObjects = append(hitObjects, types.HitObject{
+							XPosition: int16((512 * lane / 4) - 64),
+							YPosition: 192,
+							Time:      startTime,
+							Type:      types.HoldNote,
+							HitSound:  100,
+							ObjectParams: types.ObjectParams{
+								EndTime: time,
+							},
+							HitSample: types.HitSample{
+								NormalSet:   0,
+								AdditionSet: 0,
+								Index:       0,
+								Volume:      0,
+							},
+						})
+						delete(holdNotes, lane)
+					}
+				}
 			}
 		}
 	}

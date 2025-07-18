@@ -75,7 +75,11 @@ func main() {
 	// defer outputFile.Close()
 
 	// for _, hb := range osuMap.Difficulties[len(osuMap.Difficulties)-1].HitObjects.List {
-	// 	hitsample := fmt.Sprintf("%d:%d:%d:%d:", hb.HitSample.NormalSet, hb.HitSample.AdditionSet, hb.HitSample.Index, hb.HitSample.Volume)
-	// 	fmt.Fprintf(outputFile, "%v,%v,%v,%v,%v\n", hb.XPosition, hb.YPosition, hb.Time, hb.Type, hitsample)
+	// 	hitSample := fmt.Sprintf("%d:%d:%d:%d:", hb.HitSample.NormalSet, hb.HitSample.AdditionSet, hb.HitSample.Index, hb.HitSample.Volume)
+	// 	endTime := ""
+	// 	if hb.ObjectParams.EndTime != 0 {
+	// 		endTime = fmt.Sprintf("%d:", hb.ObjectParams.EndTime)
+	// 	}
+	// 	fmt.Fprintf(outputFile, "%v,%v,%v,%v,%v,%v%v\n", hb.XPosition, hb.YPosition, hb.Time, hb.Type, hb.HitSound, endTime, hitSample)
 	// }
 }

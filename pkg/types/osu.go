@@ -171,10 +171,19 @@ type HitObject struct {
 	YPosition    int16
 	Time         int
 	Type         HitObjectType
-	HitSound     int8
+	HitSound     HitSound
 	ObjectParams ObjectParams
 	HitSample    HitSample
 }
+
+type HitSound uint8
+
+const (
+	HitSoundNormal  HitSound = 1 << 0
+	HitSoundWhistle HitSound = 1 << 1
+	HitSoundFinish  HitSound = 1 << 2
+	HitSoundClap    HitSound = 1 << 3
+)
 
 type HitObjectType uint8
 
