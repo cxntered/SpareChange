@@ -10,7 +10,7 @@ The Sparebeat map format is a JSON object with the following structure:
 | `url`                   | `string`                  | An author-provided URL.                                                    |
 | `bgColor`               | `string[]`                | (Optional) Start and end hex colors for the linear gradient background.    |
 | `beats`                 | `number`                  | (Optional) The number of beats per measure, defaults to 4.                 |
-| `bpm`                   | `number`                  | The beats per minute of the song.                                          |
+| `bpm`                   | `number` or `string`      | The beats per minute of the song.                                          |
 | `startTime`             | `number`                  | Determines where sections will start in the map. Measured in milliseconds. |
 | **`level`**             | `object`                  | Contains the difficulty rating or name for each level.                     |
 | &nbsp;&nbsp;`└─ easy`   | `number` or `string`      | Difficulty rating/name for the "easy" level.                               |
@@ -21,7 +21,7 @@ The Sparebeat map format is a JSON object with the following structure:
 | &nbsp;&nbsp;`└─ normal` | `Array<string \| object>` | Map data for the "normal" map.                                             |
 | &nbsp;&nbsp;`└─ hard`   | `Array<string \| object>` | Map data for the "hard" map.                                               |
 
-Each level's difficulty rating or name is set by the map author, with seemingly no restrictions. In practice, no levels are named and instead use an arbitrary(?) difficulty rating. In beta, setting a level to 0 will gray it out, while setting it to -1 or a string will hide it entirely.
+Each level's difficulty rating or name is set by the map author, with seemingly no restrictions. In practice, no levels are named and instead use an arbitrary(?) difficulty rating. In beta, setting a level to 0 will gray it out, while setting it to -1 or a string that does not contain only numbers will hide it entirely.
 
 Each difficulty's map data is an array of strings and/or objects. Strings contain the note data of each section, where a section is **up to 4 measures long** (16 rows). Objects contain map settings, which include toggling on or off the bar line, changing the BPM, and changing the speed of the map. Map settings do not create new sections, but apply from that point onwards.
 

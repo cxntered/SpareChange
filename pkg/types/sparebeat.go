@@ -1,16 +1,16 @@
 package types
 
 type SparebeatMap struct {
-	ID        string   `json:"id,omitempty"`
-	Title     string   `json:"title"`
-	Artist    string   `json:"artist"`
-	URL       string   `json:"url"`
-	BgColor   []string `json:"bgColor,omitempty"`
-	Beats     uint     `json:"beats,omitempty"`
-	BPM       float64  `json:"bpm"`
-	StartTime int      `json:"startTime"`
-	Level     Level    `json:"level"`
-	Map       MapData  `json:"map"`
+	ID        string      `json:"id,omitempty"`
+	Title     string      `json:"title"`
+	Artist    string      `json:"artist"`
+	URL       string      `json:"url"`
+	BgColor   []string    `json:"bgColor,omitempty"`
+	Beats     uint        `json:"beats,omitempty"`
+	BPM       interface{} `json:"bpm"`
+	StartTime int         `json:"startTime"`
+	Level     Level       `json:"level"`
+	Map       MapData     `json:"map"`
 }
 
 type Level struct {

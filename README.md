@@ -26,8 +26,8 @@ _not comprehensive at all, just a rough list for now_
 
 - [x] Fetch Sparebeat map from both beta and stable
 - [x] Parse Sparebeat map JSON
-- [ ] Convert Sparebeat map to an osu!mania beatmap
-- [ ] Create a `.osz` file with the converted map and audio
+- [x] Convert Sparebeat map to an osu!mania beatmap
+- [x] Create a `.osz` file with the converted map and audio
 - [ ] Properly convert Sparebeat BPM & speed changes to osu!mania SV
 - [ ] Allow custom Sparebeat maps to be converted
 - [ ] Allow osu!mania beatmaps to be converted into Sparebeat maps

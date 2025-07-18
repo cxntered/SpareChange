@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/cxntered/SpareChange/pkg/converter"
 	"github.com/cxntered/SpareChange/pkg/types"
@@ -25,15 +26,14 @@ func main() {
 	}
 
 	id := args[0]
-	var mapURL string
+
+	var mapURL string = fmt.Sprintf("https://sparebeat.com/play/%s/map", id)
 	if *beta {
 		mapURL = fmt.Sprintf("https://beta.sparebeat.com/api/tracks/%s/map", id)
-	} else {
-		mapURL = fmt.Sprintf("https://sparebeat.com/play/%s/map", id)
 	}
-
 	fmt.Printf("Fetching Sparebeat map from: %s\n", mapURL)
 
+	// fetch the map data
 	res, err := http.Get(mapURL)
 	if err != nil {
 		fmt.Printf("Error fetching map: %v\n", err)
@@ -47,39 +47,99 @@ func main() {
 		os.Exit(1)
 	}
 
+	// parse the map data
 	var mapData types.SparebeatMap
 	err = json.Unmarshal(body, &mapData)
 	if err != nil {
 		fmt.Printf("Error unmarshalling response body: %v\n", err)
 		os.Exit(1)
 	}
+	fmt.Printf("Fetched & parsed map: %+v\n", mapData.Title)
 
-	fmt.Printf("Successfully fetched map: %+v\n", mapData.Title)
-
+	// convert map to osu! format
 	osuMap, err := converter.ConvertSparebeatToOsu(mapData)
 	if err != nil {
 		fmt.Printf("Error converting Sparebeat map to osu! format: %v\n", err)
 		os.Exit(1)
 	}
+	fmt.Println("Converted map to osu! format")
 
-	fmt.Printf("Successfully converted map to osu! format: %s\n", osuMap.Metadata.Title)
+	// create temp dir for conversion
+	tempDir := os.TempDir()
+	sparebeatDir := filepath.Join(tempDir, "sparechange")
+	err = os.MkdirAll(sparebeatDir, os.ModePerm)
+	if err != nil {
+		fmt.Printf("Error creating temp directory: %v\n", err)
+		os.Exit(1)
+	}
 
-	// uncomment the following to print hit objects to a file
-	// demonstration purposes for now, will be removed later
+	// write osu! files for each difficulty
+	var diffFiles []string
+	for _, diffMap := range osuMap.Difficulties {
+		fileName := fmt.Sprintf("%s - %s (%s) [%s].osu",
+			diffMap.Metadata.Artist,
+			diffMap.Metadata.Title,
+			diffMap.Metadata.Creator,
+			diffMap.Metadata.Version,
+		)
+		file := filepath.Join(sparebeatDir, fileName)
+		diffFiles = append(diffFiles, file)
+		err = converter.WriteOsuFile(diffMap, file)
+		if err != nil {
+			fmt.Printf("Error writing osu! file: %v\n", err)
+			os.Exit(1)
+		}
+	}
+	fmt.Println("Wrote map difficulties' .osu files")
 
-	// outputFile, err := os.Create("output.txt")
-	// if err != nil {
-	// 	fmt.Printf("Error creating output file: %v\n", err)
-	// 	os.Exit(1)
-	// }
-	// defer outputFile.Close()
+	// download audio file
+	var audioURL string = fmt.Sprintf("https://sparebeat.com/play/%s/music", id)
+	if *beta {
+		audioURL = fmt.Sprintf("https://beta.sparebeat.com/api/tracks/%s/audio", id)
+	}
+	audioFile := filepath.Join(sparebeatDir, "audio.mp3")
 
-	// for _, hb := range osuMap.Difficulties[len(osuMap.Difficulties)-1].HitObjects.List {
-	// 	hitSample := fmt.Sprintf("%d:%d:%d:%d:", hb.HitSample.NormalSet, hb.HitSample.AdditionSet, hb.HitSample.Index, hb.HitSample.Volume)
-	// 	endTime := ""
-	// 	if hb.ObjectParams.EndTime != 0 {
-	// 		endTime = fmt.Sprintf("%d:", hb.ObjectParams.EndTime)
-	// 	}
-	// 	fmt.Fprintf(outputFile, "%v,%v,%v,%v,%v,%v%v\n", hb.XPosition, hb.YPosition, hb.Time, hb.Type, hb.HitSound, endTime, hitSample)
-	// }
+	resp, err := http.Get(audioURL)
+	if err != nil {
+		fmt.Printf("Error downloading audio file: %v\n", err)
+		os.Exit(1)
+	}
+	defer resp.Body.Close()
+
+	out, err := os.Create(audioFile)
+	if err != nil {
+		fmt.Printf("Error creating audio file: %v\n", err)
+		os.Exit(1)
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		fmt.Printf("Error saving audio file: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println("Downloaded music audio file")
+
+	// zip all files into a .osz
+	files := append(diffFiles, audioFile)
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Printf("Error getting current working directory: %v\n", err)
+		os.Exit(1)
+	}
+
+	err = converter.ZipFiles(files, filepath.Join(cwd, fmt.Sprintf("%s - %s.osz", osuMap.Metadata.Artist, osuMap.Metadata.Title)))
+	if err != nil {
+		fmt.Printf("Error zipping files: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("Created .osz file: %s - %s.osz\n", osuMap.Metadata.Artist, osuMap.Metadata.Title)
+
+	// clean up temp directory
+	err = os.RemoveAll(sparebeatDir)
+	if err != nil {
+		fmt.Printf("Error cleaning up temp folder: %v\n", err)
+	} else {
+		fmt.Println("Cleaned up temporary conversion folder")
+	}
 }

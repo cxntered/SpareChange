@@ -36,20 +36,45 @@ func ConvertSparebeatToOsu(sbMap types.SparebeatMap) (types.OsuMap, error) {
 		SliderTickRate:    1,
 	}
 
-	easy, err := convertSparebeatDifficulty(sbMap, osuMap, "Easy")
-	if err != nil {
-		return osuMap, err
+	var beats uint = 4
+	if sbMap.Beats != 0 {
+		beats = sbMap.Beats
 	}
-	normal, err := convertSparebeatDifficulty(sbMap, osuMap, "Normal")
-	if err != nil {
-		return osuMap, err
-	}
-	hard, err := convertSparebeatDifficulty(sbMap, osuMap, "Hard")
-	if err != nil {
-		return osuMap, err
+	bpm := getBPM(sbMap.BPM)
+	osuMap.BPM = types.TimingPoint{
+		Time:        sbMap.StartTime,
+		BeatLength:  60 * 1000 / bpm,
+		Meter:       beats,
+		SampleSet:   1,
+		SampleIndex: 0,
+		Volume:      100,
+		Uninherited: true,
+		Effects:     types.EffectNone,
 	}
 
-	osuMap.Difficulties = []types.OsuFile{easy, normal, hard}
+	if isLevelEnabled(sbMap.Level.Easy) {
+		easy, err := convertSparebeatDifficulty(sbMap, osuMap, "Easy")
+		if err != nil {
+			return osuMap, err
+		}
+		osuMap.Difficulties = append(osuMap.Difficulties, easy)
+	}
+
+	if isLevelEnabled(sbMap.Level.Normal) {
+		normal, err := convertSparebeatDifficulty(sbMap, osuMap, "Normal")
+		if err != nil {
+			return osuMap, err
+		}
+		osuMap.Difficulties = append(osuMap.Difficulties, normal)
+	}
+
+	if isLevelEnabled(sbMap.Level.Hard) {
+		hard, err := convertSparebeatDifficulty(sbMap, osuMap, "Hard")
+		if err != nil {
+			return osuMap, err
+		}
+		osuMap.Difficulties = append(osuMap.Difficulties, hard)
+	}
 
 	return osuMap, nil
 }
@@ -62,6 +87,7 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuMap, l
 	osuFile.Metadata = osuMap.Metadata
 	osuFile.Metadata.Version = levelName
 	osuFile.Difficulty = osuMap.Difficulty
+	osuFile.TimingPoints.List = append(osuFile.TimingPoints.List, osuMap.BPM)
 
 	var mapData []interface{}
 	switch levelName {
@@ -76,12 +102,10 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuMap, l
 	}
 
 	var rowCount uint = 0
-	var bpm float64 = sbMap.BPM
-	var beats uint
+	bpm := getBPM(sbMap.BPM)
+	var beats uint = 4
 	if sbMap.Beats != 0 {
 		beats = sbMap.Beats
-	} else {
-		beats = 4
 	}
 	prevBeats := beats
 	holdNotes := make(map[uint]int) // column index -> start time
@@ -120,7 +144,7 @@ func parseSections(
 	var hitObjects []types.HitObject
 	for _, row := range rows {
 		*rowCount++
-		time := int(float64(*rowCount**beats)*beatLength/16) - sbMap.StartTime
+		time := int(float64(*rowCount**beats)*beatLength/16) - max(sbMap.StartTime, -sbMap.StartTime)
 		notes := strings.SplitSeq(row, "")
 
 		for note := range notes {
@@ -205,7 +229,7 @@ func parseMapOptions(
 		}
 		beatLength := 60 * 1000 / *bpm
 
-		time := int(float64(rowCount*beats)*beatLength/16) - sbMap.StartTime
+		time := sbMap.StartTime + int(float64(rowCount*beats)*beatLength/16)
 
 		if opts.BPM != nil {
 			return types.TimingPoint{
@@ -233,6 +257,38 @@ func parseMapOptions(
 	}
 
 	return types.TimingPoint{}
+}
+
+func isLevelEnabled(val interface{}) bool {
+	if val == nil {
+		return false
+	}
+	switch v := val.(type) {
+	case float64:
+		return v > 0
+	case string:
+		return isNumeric(v) && v != "0" && v != "-1"
+	default:
+		return false
+	}
+}
+
+func getBPM(bpmRaw interface{}) float64 {
+	if bpmRaw == nil {
+		return 0
+	}
+	switch v := bpmRaw.(type) {
+	case float64:
+		return v
+	case string:
+		f, err := strconv.ParseFloat(v, 64)
+		if err == nil {
+			return f
+		}
+		return 0
+	default:
+		return 0
+	}
 }
 
 func isNumeric(str string) bool {

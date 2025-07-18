@@ -5,6 +5,7 @@ type OsuMap struct {
 	General      GeneralSection
 	Metadata     MetadataSection
 	Difficulty   DifficultySection
+	BPM          TimingPoint
 	Difficulties []OsuFile
 }
 
@@ -147,8 +148,16 @@ type TimingPoint struct {
 	SampleIndex int
 	Volume      int
 	Uninherited bool
-	Effects     int
+	Effects     Effect
 }
+
+type Effect uint8
+
+const (
+	EffectNone             Effect = 1
+	EffectKiaiTime         Effect = 1 << 0
+	EffectOmitFirstBarLine Effect = 1 << 3
+)
 
 type ColoursSection struct {
 	List []Colour
