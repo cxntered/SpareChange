@@ -111,13 +111,13 @@ func main() {
 		fmt.Printf("Error creating audio file: %v\n", err)
 		os.Exit(1)
 	}
-	defer out.Close()
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
 		fmt.Printf("Error saving audio file: %v\n", err)
 		os.Exit(1)
 	}
+	out.Close()
 	fmt.Println("Downloaded music audio file")
 
 	// zip all files into a .osz
