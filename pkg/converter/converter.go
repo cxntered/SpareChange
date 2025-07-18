@@ -83,12 +83,14 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuMap, l
 	} else {
 		beats = 4
 	}
+	prevBeats := beats
 	holdNotes := make(map[uint]int) // column index -> start time
+	in24thMode := false
 
 	for _, elem := range mapData {
 		switch v := elem.(type) {
 		case string:
-			hitObjects := parseSections(v, sbMap, &rowCount, &bpm, beats, holdNotes)
+			hitObjects := parseSections(v, sbMap, &rowCount, &bpm, &beats, prevBeats, holdNotes, in24thMode)
 			osuFile.HitObjects.List = append(osuFile.HitObjects.List, hitObjects...)
 
 		case map[string]interface{}:
@@ -102,17 +104,25 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuMap, l
 	return osuFile, nil
 }
 
-func parseSections(section string, sbMap types.SparebeatMap, rowCount *uint, bpm *float64, beats uint, holdNotes map[uint]int) []types.HitObject {
+func parseSections(
+	section string,
+	sbMap types.SparebeatMap,
+	rowCount *uint,
+	bpm *float64,
+	beats *uint,
+	prevBeats uint,
+	holdNotes map[uint]int,
+	in24thMode bool,
+) []types.HitObject {
 	rows := strings.Split(section, ",")
 	beatLength := 60 * 1000 / *bpm
 
 	var hitObjects []types.HitObject
 	for _, row := range rows {
 		*rowCount++
-		time := int(float64(*rowCount*beats)*beatLength/16) - sbMap.StartTime
+		time := int(float64(*rowCount**beats)*beatLength/16) - sbMap.StartTime
 		notes := strings.SplitSeq(row, "")
 
-		// TODO: handle 24th notes & bind zones
 		for note := range notes {
 			if isNumeric(note) { // normal notes
 				lane, _ := strconv.Atoi(note)
@@ -133,13 +143,13 @@ func parseSections(section string, sbMap types.SparebeatMap, rowCount *uint, bpm
 						Volume:      0,
 					},
 				})
-			} else { // hold notes
+			} else if unicode.IsLetter(rune(note[0])) { // hold notes
 				// convert letter into alphabet index (i.e. lane)
 				lane := uint(unicode.ToLower(rune(note[0]))) - uint('a') + 1
 
 				if lane <= 4 {
 					holdNotes[lane] = time
-				} else {
+				} else if lane <= 8 {
 					lane -= 4
 					startTime, ok := holdNotes[lane]
 
@@ -163,6 +173,16 @@ func parseSections(section string, sbMap types.SparebeatMap, rowCount *uint, bpm
 						delete(holdNotes, lane)
 					}
 				}
+			} else { // modifiers
+				if note == "(" {
+					in24thMode = true
+					*beats = 6
+					break
+				} else if note == ")" {
+					in24thMode = false
+					*beats = prevBeats
+					break
+				}
 			}
 		}
 	}
@@ -170,7 +190,13 @@ func parseSections(section string, sbMap types.SparebeatMap, rowCount *uint, bpm
 	return hitObjects
 }
 
-func parseMapOptions(mapOptions map[string]interface{}, sbMap types.SparebeatMap, rowCount uint, bpm *float64, beats uint) types.TimingPoint {
+func parseMapOptions(
+	mapOptions map[string]interface{},
+	sbMap types.SparebeatMap,
+	rowCount uint,
+	bpm *float64,
+	beats uint,
+) types.TimingPoint {
 	var opts types.MapOptions
 	mapBytes, _ := json.Marshal(mapOptions)
 	if err := json.Unmarshal(mapBytes, &opts); err == nil {
