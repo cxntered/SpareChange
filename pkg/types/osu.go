@@ -26,15 +26,15 @@ type GeneralSection struct {
 	AudioLeadIn              int
 	AudioHash                string
 	PreviewTime              int
-	Countdown                uint8   // 0: no countdown, 1: normal, 2: half, 3: double, defaults to 1
-	SampleSet                string  // "Normal", "Soft", or "Drum", defaults to "Normal"
+	Countdown                Countdown
+	SampleSet                SampleSet
 	StackLeniency            float32 // decimal between 0 and 1, defaults to 0.7
-	Mode                     uint8   // 0: osu!standard, 1: osu!taiko, 2: osu!catch, 3: osu!mania
+	Mode                     Mode
 	LetterboxInBreaks        bool
 	StoryFireInFront         bool
 	UseSkinSprites           bool
 	AlwaysShowPlayfield      bool
-	OverlayPosition          string // "NoChange", "Below", or "Above", defaults to "NoChange"
+	OverlayPosition          OverlayPosition
 	SkinPreference           string
 	EpilepsyWarning          bool
 	CountdownOffset          int
@@ -42,6 +42,40 @@ type GeneralSection struct {
 	WidescreenStoryboard     bool
 	SamplesMatchPlaybackRate bool
 }
+
+type Countdown uint8
+
+const (
+	CountdownNoChange Countdown = 0
+	CountdownNormal   Countdown = 1
+	CountdownHalf     Countdown = 2
+	CountdownDouble   Countdown = 3
+)
+
+type Mode uint8
+
+const (
+	ModeStandard Mode = 0
+	ModeTaiko    Mode = 1
+	ModeCatch    Mode = 2
+	ModeMania    Mode = 3
+)
+
+type SampleSet string
+
+const (
+	SampleSetNormal SampleSet = "Normal"
+	SampleSetSoft   SampleSet = "Soft"
+	SampleSetDrum   SampleSet = "Drum"
+)
+
+type OverlayPosition string
+
+const (
+	OverlayPositionNoChange OverlayPosition = "NoChange"
+	OverlayPositionBelow    OverlayPosition = "Below"
+	OverlayPositionAbove    OverlayPosition = "Above"
+)
 
 type EditorSection struct {
 	Bookmarks       []int
@@ -74,14 +108,22 @@ type DifficultySection struct {
 }
 
 type EventsSection struct {
-	Events []Event
+	List []Event
 }
 
 type Event struct {
-	EventType   interface{} // can be string or int
+	EventType   EventType
 	StartTime   int
 	EventParams EventParams
 }
+
+type EventType uint8
+
+const (
+	EventTypeBackground EventType = 0
+	EventTypeVideo      EventType = 1
+	EventTypeBreak      EventType = 2
+)
 
 type EventParams struct {
 	// background & video specific
@@ -94,7 +136,7 @@ type EventParams struct {
 }
 
 type TimingPointsSection struct {
-	TimingPoints []TimingPoint
+	List []TimingPoint
 }
 
 type TimingPoint struct {
@@ -109,7 +151,7 @@ type TimingPoint struct {
 }
 
 type ColoursSection struct {
-	Colours []Colour
+	List []Colour
 }
 
 type Colour struct {
@@ -121,17 +163,28 @@ type Colour struct {
 }
 
 type HitObjectsSection struct {
-	HitObjects []HitObject
+	List []HitObject
 }
 
 type HitObject struct {
 	XPosition    int16
 	YPosition    int16
 	Time         int
+	Type         HitObjectType
 	HitSound     int8
 	ObjectParams ObjectParams
-	HitSample    []HitSample
+	HitSample    HitSample
 }
+
+type HitObjectType uint8
+
+const (
+	HitCircle HitObjectType = 1 << 0
+	Slider    HitObjectType = 1 << 1
+	NewCombo  HitObjectType = 1 << 2
+	Spinner   HitObjectType = 1 << 3
+	HoldNote  HitObjectType = 1 << 7
+)
 
 type ObjectParams struct {
 	// slider specific

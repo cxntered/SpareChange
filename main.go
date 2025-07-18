@@ -62,5 +62,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Successfully converted map to osu! format: %+v\n", osuMap.Difficulties[len(osuMap.Difficulties)-1])
+	fmt.Printf("Successfully converted map to osu! format: %s\n", osuMap.Metadata.Title)
+
+	// uncomment the following to print hit objects to a file
+	// demonstration purposes for now, will be removed later
+
+	// outputFile, err := os.Create("output.txt")
+	// if err != nil {
+	// 	fmt.Printf("Error creating output file: %v\n", err)
+	// 	os.Exit(1)
+	// }
+	// defer outputFile.Close()
+
+	// for _, hb := range osuMap.Difficulties[len(osuMap.Difficulties)-1].HitObjects.List {
+	// 	hitsample := fmt.Sprintf("%d:%d:%d:%d:", hb.HitSample.NormalSet, hb.HitSample.AdditionSet, hb.HitSample.Index, hb.HitSample.Volume)
+	// 	fmt.Fprintf(outputFile, "%v,%v,%v,%v,%v\n", hb.XPosition, hb.YPosition, hb.Time, hb.Type, hitsample)
+	// }
 }

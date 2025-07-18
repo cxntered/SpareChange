@@ -2,6 +2,9 @@ package converter
 
 import (
 	"encoding/json"
+	"strconv"
+	"strings"
+	"unicode"
 
 	"github.com/cxntered/SpareChange/pkg/types"
 )
@@ -11,7 +14,7 @@ func ConvertSparebeatToOsu(sbMap types.SparebeatMap) (types.OsuMap, error) {
 
 	osuMap.General = types.GeneralSection{
 		AudioFilename: "audio.mp3",
-		Mode:          3,
+		Mode:          types.ModeMania,
 	}
 
 	osuMap.Metadata = types.MetadataSection{
@@ -72,19 +75,25 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuMap, l
 		mapData = sbMap.Map.Hard
 	}
 
-	var bpm float64 = sbMap.BPM
 	var rowCount uint = 0
+	var bpm float64 = sbMap.BPM
+	var beats uint
+	if sbMap.Beats != 0 {
+		beats = sbMap.Beats
+	} else {
+		beats = 4
+	}
 
 	for _, elem := range mapData {
 		switch v := elem.(type) {
 		case string:
-			// TODO: parse rows
-			rowCount++
+			hitObjects := parseSections(v, sbMap, &rowCount, &bpm, beats)
+			osuFile.HitObjects.List = append(osuFile.HitObjects.List, hitObjects...)
 
 		case map[string]interface{}:
-			timingPoint := parseMapOptions(v, sbMap, &bpm, rowCount)
+			timingPoint := parseMapOptions(v, sbMap, rowCount, &bpm, beats)
 			if timingPoint != (types.TimingPoint{}) {
-				osuFile.TimingPoints.TimingPoints = append(osuFile.TimingPoints.TimingPoints, timingPoint)
+				osuFile.TimingPoints.List = append(osuFile.TimingPoints.List, timingPoint)
 			}
 		}
 	}
@@ -92,7 +101,52 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuMap, l
 	return osuFile, nil
 }
 
-func parseMapOptions(mapOptions map[string]interface{}, sbMap types.SparebeatMap, bpm *float64, rowCount uint) types.TimingPoint {
+func parseSections(section string, sbMap types.SparebeatMap, rowCount *uint, bpm *float64, beats uint) []types.HitObject {
+	rows := strings.Split(section, ",")
+	beatLength := 60 * 1000 / *bpm
+
+	var hitObjects []types.HitObject
+	for _, row := range rows {
+		*rowCount++
+		time := int(float64(*rowCount*beats)*beatLength/16) - sbMap.StartTime
+		notes := strings.SplitSeq(row, "")
+
+		for note := range notes {
+			if isNumeric(note) { // normal notes
+				key, _ := strconv.Atoi(note)
+				if key > 4 {
+					key -= 4
+				}
+
+				hitObjects = append(hitObjects, types.HitObject{
+					XPosition: int16((512 * key / 4) - 64),
+					YPosition: 192,
+					Time:      time,
+					Type:      types.HitCircle,
+					HitSound:  100,
+					HitSample: types.HitSample{
+						NormalSet:   1,
+						AdditionSet: 0,
+						Index:       0,
+						Volume:      100,
+					},
+				})
+			} else { // hold notes
+				// TODO: handle hold notes
+				// osu!mania doesn't have "hold note starts" and "hold note ends"
+				// instead, it has a single note that represents the entire hold with an endTime
+				// we need to get the hold note end to calculate the end time
+
+				// // convert letter into alphabet index
+				// index := int(unicode.ToLower(rune(note[0]))) - int('a') + 1
+			}
+		}
+	}
+
+	return hitObjects
+}
+
+func parseMapOptions(mapOptions map[string]interface{}, sbMap types.SparebeatMap, rowCount uint, bpm *float64, beats uint) types.TimingPoint {
 	var opts types.MapOptions
 	mapBytes, _ := json.Marshal(mapOptions)
 	if err := json.Unmarshal(mapBytes, &opts); err == nil {
@@ -101,14 +155,7 @@ func parseMapOptions(mapOptions map[string]interface{}, sbMap types.SparebeatMap
 		}
 		beatLength := 60 * 1000 / *bpm
 
-		var beats uint
-		if sbMap.Beats != 0 {
-			beats = sbMap.Beats
-		} else {
-			beats = 4
-		}
-
-		time := sbMap.StartTime + int(float64(rowCount*beats)*beatLength/16)
+		time := int(float64(rowCount*beats)*beatLength/16) - sbMap.StartTime
 
 		if opts.BPM != nil {
 			return types.TimingPoint{
@@ -136,4 +183,13 @@ func parseMapOptions(mapOptions map[string]interface{}, sbMap types.SparebeatMap
 	}
 
 	return types.TimingPoint{}
+}
+
+func isNumeric(str string) bool {
+	for _, char := range str {
+		if !unicode.IsDigit(char) {
+			return false
+		}
+	}
+	return true
 }
