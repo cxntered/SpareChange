@@ -48,6 +48,33 @@ func WriteOsuFile(osuFile types.OsuFile, filePath string) error {
 	sb.WriteString(fmt.Sprintf("SliderTickRate: %.1f\n", osuFile.Difficulty.SliderTickRate))
 	sb.WriteString("\n")
 
+	// events
+	sb.WriteString("[Events]\n")
+	for _, event := range osuFile.Events.List {
+		switch event.EventType {
+		case types.EventTypeBackground:
+			sb.WriteString(fmt.Sprintf("0,%d,%s,%d,%d\n",
+				event.StartTime,
+				event.EventParams.FileName,
+				event.EventParams.XOffset,
+				event.EventParams.YOffset,
+			))
+		case types.EventTypeVideo:
+			sb.WriteString(fmt.Sprintf("1,%d,%s,%d,%d\n",
+				event.StartTime,
+				event.EventParams.FileName,
+				event.EventParams.XOffset,
+				event.EventParams.YOffset,
+			))
+		case types.EventTypeBreak:
+			sb.WriteString(fmt.Sprintf("2,%d,%d\n",
+				event.StartTime,
+				event.EventParams.EndTime,
+			))
+		}
+	}
+	sb.WriteString("\n")
+
 	// timing points
 	sb.WriteString("[TimingPoints]\n")
 	for _, timingPoint := range osuFile.TimingPoints.List {

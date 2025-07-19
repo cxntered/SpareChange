@@ -3,6 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/color"
+	"image/draw"
 	"io"
 	"net/http"
 	"os"
@@ -10,6 +13,8 @@ import (
 
 	"github.com/cxntered/SpareChange/pkg/converter"
 	"github.com/cxntered/SpareChange/pkg/types"
+	"github.com/cxntered/SpareChange/pkg/utils"
+	"github.com/disintegration/imaging"
 	flag "github.com/spf13/pflag"
 )
 
@@ -48,16 +53,16 @@ func main() {
 	}
 
 	// parse the map data
-	var mapData types.SparebeatMap
-	err = json.Unmarshal(body, &mapData)
+	var sbMap types.SparebeatMap
+	err = json.Unmarshal(body, &sbMap)
 	if err != nil {
 		fmt.Printf("Error unmarshalling response body: %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Printf("Fetched & parsed map: %+v\n", mapData.Title)
+	fmt.Printf("Fetched & parsed map: %+v\n", sbMap.Title)
 
 	// convert map to osu! format
-	osuMap, err := converter.ConvertSparebeatToOsu(mapData)
+	osuMap, err := converter.ConvertSparebeatToOsu(sbMap)
 	if err != nil {
 		fmt.Printf("Error converting Sparebeat map to osu! format: %v\n", err)
 		os.Exit(1)
@@ -120,13 +125,41 @@ func main() {
 	out.Close()
 	fmt.Println("Downloaded music audio file")
 
-	// zip all files into a .osz
-	files := append(diffFiles, audioFile)
+	// create background image
 	cwd, err := os.Getwd()
 	if err != nil {
 		fmt.Printf("Error getting current working directory: %v\n", err)
 		os.Exit(1)
 	}
+
+	img, err := imaging.Open(filepath.Join(cwd, "assets", "background.png"))
+	width, height := img.Bounds().Dx(), img.Bounds().Dy()
+	if err != nil {
+		fmt.Printf("Error opening background image: %v\n", err)
+		os.Exit(1)
+	}
+
+	gradient := imaging.New(width, height, color.Transparent)
+	startColor := color.NRGBA{R: 67, G: 198, B: 172, A: 255}
+	endColor := color.NRGBA{R: 25, G: 22, B: 84, A: 255}
+	if len(sbMap.BgColor) == 2 {
+		startColor = utils.HexToNRGBA(sbMap.BgColor[0])
+		endColor = utils.HexToNRGBA(sbMap.BgColor[1])
+	}
+	for y := range height {
+		t := float64(y) / float64(height-1)
+		c := utils.InterpolateColor(startColor, endColor, t)
+		draw.Draw(gradient, image.Rect(0, y, width, y+1), image.NewUniform(c), image.Point{}, draw.Over)
+	}
+
+	blended := imaging.Overlay(img, gradient, image.Pt(0, 0), 0.8)
+
+	backgroundPath := filepath.Join(sparebeatDir, "background.png")
+	imaging.Save(blended, backgroundPath)
+	fmt.Println("Created background image")
+
+	// zip all files into a .osz
+	files := append(diffFiles, audioFile, backgroundPath)
 
 	err = converter.ZipFiles(files, filepath.Join(cwd, fmt.Sprintf("%s - %s.osz", osuMap.Metadata.Artist, osuMap.Metadata.Title)))
 	if err != nil {

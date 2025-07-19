@@ -36,6 +36,18 @@ func ConvertSparebeatToOsu(sbMap types.SparebeatMap) (types.OsuMap, error) {
 		SliderTickRate:    1,
 	}
 
+	osuMap.Events.List = []types.Event{
+		{
+			EventType: types.EventTypeBackground,
+			StartTime: sbMap.StartTime,
+			EventParams: types.EventParams{
+				FileName: "background.png",
+				XOffset:  0,
+				YOffset:  0,
+			},
+		},
+	}
+
 	var beats uint = 4
 	if sbMap.Beats != 0 {
 		beats = sbMap.Beats
@@ -87,6 +99,7 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuMap, l
 	osuFile.Metadata = osuMap.Metadata
 	osuFile.Metadata.Version = levelName
 	osuFile.Difficulty = osuMap.Difficulty
+	osuFile.Events = osuMap.Events
 	osuFile.TimingPoints.List = append(osuFile.TimingPoints.List, osuMap.BPM)
 
 	var mapData []interface{}

@@ -5,6 +5,7 @@ type OsuMap struct {
 	General      GeneralSection
 	Metadata     MetadataSection
 	Difficulty   DifficultySection
+	Events       EventsSection
 	BPM          TimingPoint
 	Difficulties []OsuFile
 }
