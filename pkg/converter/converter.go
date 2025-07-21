@@ -161,7 +161,7 @@ func parseSections(
 		notes := strings.SplitSeq(row, "")
 
 		for note := range notes {
-			if isNumeric(note) { // normal notes
+			if unicode.IsDigit(rune(note[0])) { // normal notes
 				lane, _ := strconv.Atoi(note)
 				if lane > 4 { // convert attack notes into normal notes
 					lane -= 4
