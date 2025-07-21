@@ -196,7 +196,7 @@ func parseSections(
 							YPosition: 192,
 							Time:      startTime,
 							Type:      types.HoldNote,
-							HitSound:  100,
+							HitSound:  types.HitSoundNormal,
 							ObjectParams: types.ObjectParams{
 								EndTime: time,
 							},
