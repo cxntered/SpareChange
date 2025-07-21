@@ -19,47 +19,64 @@ import (
 )
 
 func main() {
-	beta := flag.BoolP("beta", "b", false, "Convert a beta Sparebeat map")
+	beta := flag.BoolP("beta", "b", false, "Whether to fetch a beta Sparebeat map")
+	path := flag.StringP("path", "p", "", "Path to a local Sparebeat map JSON file")
+	music := flag.StringP("music", "m", "", "Path to a local .mp3 audio file to use")
 	flag.Parse()
 
 	args := flag.Args()
-	if len(args) == 0 {
+	if *path == "" && len(args) == 0 {
 		fmt.Println("Usage: sparechange [options] <id>")
 		fmt.Println("Options:")
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
 
-	id := args[0]
-
-	var mapURL string = fmt.Sprintf("https://sparebeat.com/play/%s/map", id)
-	if *beta {
-		mapURL = fmt.Sprintf("https://beta.sparebeat.com/api/tracks/%s/map", id)
-	}
-	fmt.Printf("Fetching Sparebeat map from: %s\n", mapURL)
-
-	// fetch the map data
-	res, err := http.Get(mapURL)
-	if err != nil {
-		fmt.Printf("Error fetching map: %v\n", err)
-		os.Exit(1)
-	}
-	defer res.Body.Close()
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		fmt.Printf("Error reading response body: %v\n", err)
-		os.Exit(1)
-	}
-
-	// parse the map data
 	var sbMap types.SparebeatMap
-	err = json.Unmarshal(body, &sbMap)
-	if err != nil {
-		fmt.Printf("Error unmarshalling response body: %v\n", err)
-		os.Exit(1)
+
+	if *path != "" {
+		file, err := os.Open(*path)
+		if err != nil {
+			fmt.Printf("Error opening map file: %v\n", err)
+			os.Exit(1)
+		}
+		defer file.Close()
+		body, err := io.ReadAll(file)
+		if err != nil {
+			fmt.Printf("Error reading map file: %v\n", err)
+			os.Exit(1)
+		}
+		err = json.Unmarshal(body, &sbMap)
+		if err != nil {
+			fmt.Printf("Error parsing map JSON: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Parsed local map: %+v\n", sbMap.Title)
+	} else {
+		id := args[0]
+		var mapURL string = fmt.Sprintf("https://sparebeat.com/play/%s/map", id)
+		if *beta {
+			mapURL = fmt.Sprintf("https://beta.sparebeat.com/api/tracks/%s/map", id)
+		}
+		fmt.Printf("Fetching Sparebeat map from: %s\n", mapURL)
+		res, err := http.Get(mapURL)
+		if err != nil {
+			fmt.Printf("Error fetching map: %v\n", err)
+			os.Exit(1)
+		}
+		defer res.Body.Close()
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			fmt.Printf("Error reading response body: %v\n", err)
+			os.Exit(1)
+		}
+		err = json.Unmarshal(body, &sbMap)
+		if err != nil {
+			fmt.Printf("Error unmarshalling response body: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Fetched & parsed map: %+v\n", sbMap.Title)
 	}
-	fmt.Printf("Fetched & parsed map: %+v\n", sbMap.Title)
 
 	// convert map to osu! format
 	osuMap, err := converter.ConvertSparebeatToOsu(sbMap)
@@ -97,33 +114,55 @@ func main() {
 	}
 	fmt.Println("Wrote map difficulties' .osu files")
 
-	// download audio file
-	var audioURL string = fmt.Sprintf("https://sparebeat.com/play/%s/music", id)
-	if *beta {
-		audioURL = fmt.Sprintf("https://beta.sparebeat.com/api/tracks/%s/audio", id)
+	// handle music
+	var audioFile string = filepath.Join(sparebeatDir, "audio.mp3")
+	if *music != "" {
+		in, err := os.Open(*music)
+		if err != nil {
+			fmt.Printf("Error opening music file: %v\n", err)
+			os.Exit(1)
+		}
+		defer in.Close()
+		out, err := os.Create(audioFile)
+		if err != nil {
+			fmt.Printf("Error creating audio file: %v\n", err)
+			os.Exit(1)
+		}
+		_, err = io.Copy(out, in)
+		if err != nil {
+			fmt.Printf("Error copying audio file: %v\n", err)
+			os.Exit(1)
+		}
+		out.Close()
+		fmt.Println("Copied local music audio file")
+	} else {
+		id := ""
+		if *path == "" && len(args) > 0 {
+			id = args[0]
+		}
+		var audioURL string = fmt.Sprintf("https://sparebeat.com/play/%s/music", id)
+		if *beta {
+			audioURL = fmt.Sprintf("https://beta.sparebeat.com/api/tracks/%s/audio", id)
+		}
+		resp, err := http.Get(audioURL)
+		if err != nil {
+			fmt.Printf("Error downloading audio file: %v\n", err)
+			os.Exit(1)
+		}
+		defer resp.Body.Close()
+		out, err := os.Create(audioFile)
+		if err != nil {
+			fmt.Printf("Error creating audio file: %v\n", err)
+			os.Exit(1)
+		}
+		_, err = io.Copy(out, resp.Body)
+		if err != nil {
+			fmt.Printf("Error saving audio file: %v\n", err)
+			os.Exit(1)
+		}
+		out.Close()
+		fmt.Println("Downloaded music audio file")
 	}
-	audioFile := filepath.Join(sparebeatDir, "audio.mp3")
-
-	resp, err := http.Get(audioURL)
-	if err != nil {
-		fmt.Printf("Error downloading audio file: %v\n", err)
-		os.Exit(1)
-	}
-	defer resp.Body.Close()
-
-	out, err := os.Create(audioFile)
-	if err != nil {
-		fmt.Printf("Error creating audio file: %v\n", err)
-		os.Exit(1)
-	}
-
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		fmt.Printf("Error saving audio file: %v\n", err)
-		os.Exit(1)
-	}
-	out.Close()
-	fmt.Println("Downloaded music audio file")
 
 	// create background image
 	cwd, err := os.Getwd()
