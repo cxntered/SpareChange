@@ -53,15 +53,27 @@ func ConvertSparebeatToOsu(sbMap types.SparebeatMap) (types.OsuMap, error) {
 		beats = sbMap.Beats
 	}
 	bpm := getBPM(sbMap.BPM)
-	osuMap.BPM = types.TimingPoint{
-		Time:        sbMap.StartTime,
-		BeatLength:  60 * 1000 / bpm,
-		Meter:       beats,
-		SampleSet:   1,
-		SampleIndex: 0,
-		Volume:      100,
-		Uninherited: true,
-		Effects:     types.EffectNone,
+	osuMap.TimingPoints.List = []types.TimingPoint{
+		{
+			Time:        0,
+			BeatLength:  60 * 1000 / bpm,
+			Meter:       beats,
+			SampleSet:   1,
+			SampleIndex: 0,
+			Volume:      100,
+			Uninherited: true,
+			Effects:     types.EffectNone,
+		},
+		{
+			Time:        sbMap.StartTime,
+			BeatLength:  60 * 1000 / bpm,
+			Meter:       beats,
+			SampleSet:   1,
+			SampleIndex: 0,
+			Volume:      100,
+			Uninherited: true,
+			Effects:     types.EffectNone,
+		},
 	}
 
 	if isLevelEnabled(sbMap.Level.Easy) {
@@ -100,7 +112,7 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuMap, l
 	osuFile.Metadata.Version = levelName
 	osuFile.Difficulty = osuMap.Difficulty
 	osuFile.Events = osuMap.Events
-	osuFile.TimingPoints.List = append(osuFile.TimingPoints.List, osuMap.BPM)
+	osuFile.TimingPoints = osuMap.TimingPoints
 
 	var mapData []interface{}
 	switch levelName {
@@ -156,8 +168,7 @@ func parseSections(
 
 	var hitObjects []types.HitObject
 	for _, row := range rows {
-		*rowCount++
-		time := int(float64(*rowCount**beats)*beatLength/16) - max(sbMap.StartTime, -sbMap.StartTime)
+		time := sbMap.StartTime + int(float64(*rowCount**beats)*beatLength/16) - int(float64(*beats)*beatLength/16)
 		notes := strings.SplitSeq(row, "")
 
 		for note := range notes {
@@ -222,6 +233,8 @@ func parseSections(
 				}
 			}
 		}
+
+		*rowCount++
 	}
 
 	return hitObjects
@@ -242,7 +255,7 @@ func parseMapOptions(
 		}
 		beatLength := 60 * 1000 / *bpm
 
-		time := sbMap.StartTime + int(float64(rowCount*beats)*beatLength/16)
+		time := sbMap.StartTime + int(float64(rowCount*beats)*beatLength/16) - int(float64(beats)*beatLength/16)
 
 		if opts.BPM != nil {
 			return types.TimingPoint{

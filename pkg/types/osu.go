@@ -6,7 +6,7 @@ type OsuMap struct {
 	Metadata     MetadataSection
 	Difficulty   DifficultySection
 	Events       EventsSection
-	BPM          TimingPoint
+	TimingPoints TimingPointsSection
 	Difficulties []OsuFile
 }
 
