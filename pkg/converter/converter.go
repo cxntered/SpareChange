@@ -211,11 +211,11 @@ func parseSections(
 					}
 				}
 			} else { // modifiers
-				if note == "(" {
+				if note == "(" && !in24thMode {
 					in24thMode = true
 					*beats = 6
 					break
-				} else if note == ")" {
+				} else if note == ")" && in24thMode {
 					in24thMode = false
 					*beats = prevBeats
 					break
