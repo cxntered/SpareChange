@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"image"
@@ -17,6 +19,9 @@ import (
 	"github.com/disintegration/imaging"
 	flag "github.com/spf13/pflag"
 )
+
+//go:embed assets/background.png
+var background []byte
 
 func main() {
 	beta := flag.BoolP("beta", "b", false, "Whether to fetch a beta Sparebeat map")
@@ -165,18 +170,12 @@ func main() {
 	}
 
 	// create background image
-	cwd, err := os.Getwd()
+	img, _, err := image.Decode(bytes.NewReader(background))
 	if err != nil {
-		fmt.Printf("Error getting current working directory: %v\n", err)
+		fmt.Printf("Error decoding background image: %v\n", err)
 		os.Exit(1)
 	}
-
-	img, err := imaging.Open(filepath.Join(cwd, "assets", "background.png"))
 	width, height := img.Bounds().Dx(), img.Bounds().Dy()
-	if err != nil {
-		fmt.Printf("Error opening background image: %v\n", err)
-		os.Exit(1)
-	}
 
 	gradient := imaging.New(width, height, color.Transparent)
 	startColor := color.NRGBA{R: 67, G: 198, B: 172, A: 255}
@@ -199,6 +198,12 @@ func main() {
 
 	// zip all files into a .osz
 	files := append(diffFiles, audioFile, backgroundPath)
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Printf("Error getting current working directory: %v\n", err)
+		os.Exit(1)
+	}
 
 	err = converter.ZipFiles(files, filepath.Join(cwd, fmt.Sprintf("%s - %s.osz", osuMap.Metadata.Artist, osuMap.Metadata.Title)))
 	if err != nil {
