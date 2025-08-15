@@ -126,7 +126,7 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuMap, l
 		mapData = sbMap.Map.Hard
 	}
 
-	var elapsedTime int = 0
+	var elapsedTime float64 = 0
 	bpm := getBPM(sbMap.BPM)
 	var beats uint = 4
 	if sbMap.Beats != 0 {
@@ -156,7 +156,7 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuMap, l
 func parseSections(
 	section string,
 	startTime int,
-	elapsedTime *int,
+	elapsedTime *float64,
 	bpm *float64,
 	beats *uint,
 	prevBeats uint,
@@ -164,11 +164,11 @@ func parseSections(
 	in24thMode *bool,
 ) []types.HitObject {
 	rows := strings.Split(section, ",")
-	beatLength := 60 * 1000 / int(*bpm)
+	beatLength := 60 * 1000 / *bpm
 	var hitObjects []types.HitObject
 
 	for _, row := range rows {
-		time := startTime + *elapsedTime - beatLength/4
+		time := startTime + int(*elapsedTime) - int(beatLength/4)
 		notes := strings.SplitSeq(row, "")
 
 		for note := range notes {
@@ -247,7 +247,7 @@ func parseSections(
 func parseMapOptions(
 	mapOptions map[string]interface{},
 	startTime int,
-	elapsedTime int,
+	elapsedTime float64,
 	bpm *float64,
 	beats uint,
 ) types.TimingPoint {
@@ -263,7 +263,7 @@ func parseMapOptions(
 			}
 		}
 		beatLength := 60 * 1000 / *bpm
-		time := startTime + elapsedTime - int(beatLength/4)
+		time := startTime + int(elapsedTime) - int(beatLength/4)
 
 		if opts.BPM != nil {
 			return types.TimingPoint{
