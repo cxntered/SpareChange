@@ -23,7 +23,7 @@ The Sparebeat map format is a JSON object with the following structure:
 
 Each level's difficulty rating or name is set by the map author, with seemingly no restrictions. In practice, no levels are named and instead use an arbitrary(?) difficulty rating. In beta, setting a level to 0 will gray it out, while setting it to -1 or a string that does not contain only numbers will hide it entirely.
 
-Each difficulty's map data is an array of strings and/or objects. Strings contain the note data of each section, where a section is **up to 4 measures long** (16 rows). Objects contain map settings, which include toggling on or off the bar line, changing the BPM, and changing the speed of the map. Map settings do not create new sections, but apply from that point onwards.
+Each difficulty's map data is an array of strings and/or objects. Strings contain the note data of each section, where a section is **up to 4 measures long** (16-24 rows). Objects contain map settings, which include toggling on or off the bar line, changing the BPM, and changing the speed of the map. Map settings do not create new sections, but apply from that point onwards.
 
 ### Section Format
 
