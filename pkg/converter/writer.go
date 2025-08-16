@@ -83,7 +83,7 @@ func WriteOsuFile(osuFile types.OsuFile, filePath string) error {
 			uninherited = 1
 		}
 
-		sb.WriteString(fmt.Sprintf("%d,%.2f,%d,%d,%d,%d,%d\n",
+		sb.WriteString(fmt.Sprintf("%d,%.2f,%d,%d,%d,%d,%d,%d\n",
 			timingPoint.Time,
 			timingPoint.BeatLength,
 			timingPoint.Meter,
@@ -91,6 +91,7 @@ func WriteOsuFile(osuFile types.OsuFile, filePath string) error {
 			timingPoint.SampleIndex,
 			timingPoint.Volume,
 			uninherited,
+			timingPoint.Effects,
 		))
 	}
 	sb.WriteString("\n")

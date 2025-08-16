@@ -62,7 +62,7 @@ func ConvertSparebeatToOsu(sbMap types.SparebeatMap) (types.OsuMap, error) {
 			SampleIndex: 0,
 			Volume:      100,
 			Uninherited: true,
-			Effects:     types.EffectNone,
+			Effects:     types.EffectOmitFirstBarLine,
 		},
 		{
 			Time:        sbMap.StartTime,
