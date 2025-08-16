@@ -8,15 +8,14 @@ _"changing" Sparebeat maps into osu!mania beatmaps... get it? ahaha..._
 
 ## Showcase
 
-_work in progress showcase, more information in the description_
-
-[![Showcase](https://img.youtube.com/vi/YKiFjcXnIJo/maxresdefault.jpg)](https://youtu.be/YKiFjcXnIJo)
+[![Showcase](https://img.youtube.com/vi/a-IGX7RbWXU/maxresdefault.jpg)](https://youtu.be/a-IGX7RbWXU)
 
 ## Resources
 
 - [Sparebeat](https://sparebeat.com) ([beta version](https://beta.sparebeat.com))
 - [osu!](https://osu.ppy.sh)
 - [Sparebeat Map Editor](https://github.com/bo-yakitarako/sparebeat-map-editor)
+- [Sparebeat Map Format](/docs/sparebeat-maps.md)
 - [.osu file format specification](<https://osu.ppy.sh/wiki/en/Client/File_formats/osu_(file_format)>)
 - [osu-parser](https://github.com/Waffle-osu/osu-parser)
 
