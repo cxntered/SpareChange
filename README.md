@@ -10,6 +10,16 @@ _"changing" Sparebeat maps into osu!mania beatmaps... get it? ahaha..._
 
 [![Showcase](https://img.youtube.com/vi/a-IGX7RbWXU/maxresdefault.jpg)](https://youtu.be/a-IGX7RbWXU)
 
+## Usage
+
+```
+Usage: sparechange [options] <id>
+Options:
+  -b, --beta           Whether to fetch a beta Sparebeat map
+  -m, --music string   Path to a local .mp3 audio file to use
+  -p, --path string    Path to a local Sparebeat map JSON file
+```
+
 ## Resources
 
 - [Sparebeat](https://sparebeat.com) ([beta version](https://beta.sparebeat.com))

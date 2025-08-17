@@ -6,7 +6,6 @@ type OsuMap struct {
 	Metadata     MetadataSection
 	Difficulty   DifficultySection
 	Events       EventsSection
-	TimingPoints TimingPointsSection
 	Difficulties []OsuFile
 }
 
@@ -155,7 +154,7 @@ type TimingPoint struct {
 type Effect uint8
 
 const (
-	EffectNone             Effect = 1
+	EffectNone             Effect = 0
 	EffectKiaiTime         Effect = 1 << 0
 	EffectOmitFirstBarLine Effect = 1 << 3
 )

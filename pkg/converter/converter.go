@@ -48,34 +48,6 @@ func ConvertSparebeatToOsu(sbMap types.SparebeatMap) (types.OsuMap, error) {
 		},
 	}
 
-	var beats uint = 4
-	if sbMap.Beats != 0 {
-		beats = sbMap.Beats
-	}
-	bpm := getBPM(sbMap.BPM)
-	osuMap.TimingPoints.List = []types.TimingPoint{
-		{
-			Time:        0,
-			BeatLength:  60 * 1000 / bpm,
-			Meter:       beats,
-			SampleSet:   1,
-			SampleIndex: 0,
-			Volume:      100,
-			Uninherited: true,
-			Effects:     types.EffectOmitFirstBarLine,
-		},
-		{
-			Time:        sbMap.StartTime,
-			BeatLength:  60 * 1000 / bpm,
-			Meter:       beats,
-			SampleSet:   1,
-			SampleIndex: 0,
-			Volume:      100,
-			Uninherited: true,
-			Effects:     types.EffectNone,
-		},
-	}
-
 	if isLevelEnabled(sbMap.Level.Easy) {
 		easy, err := convertSparebeatDifficulty(sbMap, osuMap, "Easy")
 		if err != nil {
@@ -112,7 +84,6 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuMap, l
 	osuFile.Metadata.Version = levelName
 	osuFile.Difficulty = osuMap.Difficulty
 	osuFile.Events = osuMap.Events
-	osuFile.TimingPoints = osuMap.TimingPoints
 
 	var mapData []interface{}
 	switch levelName {
@@ -145,10 +116,33 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuMap, l
 		case map[string]interface{}:
 			timingPoint := parseMapOptions(v, sbMap.StartTime, elapsedTime, &bpm, beats)
 			if timingPoint != (types.TimingPoint{}) {
+				if timingPoint.Time < sbMap.StartTime && len(osuFile.TimingPoints.List) == 0 {
+					osuFile.TimingPoints.List = append(osuFile.TimingPoints.List, types.TimingPoint{
+						Time:        0,
+						BeatLength:  60 * 1000 / bpm,
+						Meter:       beats,
+						SampleSet:   0,
+						SampleIndex: 0,
+						Volume:      100,
+						Uninherited: true,
+						Effects:     types.EffectOmitFirstBarLine,
+					})
+				}
 				osuFile.TimingPoints.List = append(osuFile.TimingPoints.List, timingPoint)
 			}
 		}
 	}
+
+	osuFile.TimingPoints.List = append(osuFile.TimingPoints.List, types.TimingPoint{
+		Time:        sbMap.StartTime,
+		BeatLength:  60 * 1000 / bpm,
+		Meter:       beats,
+		SampleSet:   0,
+		SampleIndex: 0,
+		Volume:      100,
+		Uninherited: true,
+		Effects:     types.EffectNone,
+	})
 
 	return osuFile, nil
 }
@@ -234,11 +228,7 @@ func parseSections(
 			}
 		}
 
-		if *in24thMode {
-			*elapsedTime += beatLength / 6
-		} else {
-			*elapsedTime += beatLength / 4
-		}
+		*elapsedTime += beatLength / float64(*beats)
 	}
 
 	return hitObjects
@@ -274,7 +264,7 @@ func parseMapOptions(
 				SampleIndex: 0,
 				Volume:      100,
 				Uninherited: true,
-				Effects:     0,
+				Effects:     types.EffectNone,
 			}
 		} else if opts.Speed != nil {
 			var speed float64
@@ -291,7 +281,7 @@ func parseMapOptions(
 				SampleIndex: 0,
 				Volume:      100,
 				Uninherited: false,
-				Effects:     0,
+				Effects:     types.EffectNone,
 			}
 		}
 	}
