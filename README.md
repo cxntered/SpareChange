@@ -36,13 +36,13 @@ Options:
 
 ### Building
 
-### Command Line
+#### Command Line
 
 ```bash
 $ go build -o bin/SpareChange ./cmd/cli
 ```
 
-### Web App
+#### Web App
 
 ```bash
 # Copy the images folder to the web directory

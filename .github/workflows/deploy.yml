@@ -25,7 +25,7 @@ jobs:
         uses: acifani/setup-tinygo@v2.0.0
         with:
           tinygo-version: "0.39.0"
-      - name: Build WebAssembly Module
+      - name: Build WebAssembly module
         run: |
           cp -r internal/assets/images web/
           GOOS=js GOARCH=wasm tinygo build -o web/main.wasm -no-debug ./cmd/wasm
