@@ -18,6 +18,10 @@ func WriteOsuFile(osuFile types.OsuFile, filePath string) error {
 	}
 	defer f.Close()
 
+	return WriteOsuContent(osuFile, f)
+}
+
+func WriteOsuContent(osuFile types.OsuFile, writer io.Writer) error {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("osu file format v%d\n", osuFile.Version))
 
@@ -129,7 +133,7 @@ func WriteOsuFile(osuFile types.OsuFile, filePath string) error {
 		}
 	}
 
-	_, err = f.WriteString(sb.String())
+	_, err := writer.Write([]byte(sb.String()))
 	return err
 }
 

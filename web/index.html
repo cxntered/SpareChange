@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <script src="wasm_exec.js"></script>
+    <script src="app.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" defer></script>
+    <title>SpareChange</title>
+    <meta name="description" content="Sparebeat map to osu!mania beatmap converter">
+    <meta property="og:title" content="SpareChange">
+    <meta property="og:description" content="Sparebeat map to osu!mania beatmap converter">
+    <meta property="og:url" content="https://sparechange.cxntered.dev">
+    <meta property="og:site_name" content="cxntered">
+    <meta property="og:type" content="website">
+</head>
+
+<body class="d-flex flex-column min-vh-100">
+    <div class="container flex-grow-1">
+        <header class="py-4 text-center">
+            <h1>SpareChange</h1>
+            <p class="lead">Sparebeat map to osu!mania beatmap converter</p>
+        </header>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Map Converter</h5>
+                <form id="convertForm" novalidate>
+                    <div class="mb-3">
+                        <label for="mapId" class="form-label">Sparebeat Map ID</label>
+                        <input type="text" class="form-control" id="mapId" placeholder="Enter map ID" required>
+                        <div class="invalid-feedback">
+                            Please provide a Map ID or upload a local map file.
+                        </div>
+                    </div>
+
+                    <div class="mb-1 form-check">
+                        <input type="checkbox" class="form-check-input" id="useBeta">
+                        <label class="form-check-label" for="useBeta">Use beta.sparebeat.com</label>
+                    </div>
+
+                    <div class="d-flex align-items-center mb-1">
+                        <hr class="flex-grow-1">
+                        <span class="text-muted mx-2 mb-1">or</span>
+                        <hr class="flex-grow-1">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="audioFile" class="form-label">Local Audio File (<code>.mp3</code>)</label>
+                        <input class="form-control" type="file" id="audioFile" accept=".mp3">
+                        <div class="invalid-feedback">
+                            Please upload an audio file.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="mapFile" class="form-label">Local Map File (<code>.json</code>)</label>
+                        <input class="form-control" type="file" id="mapFile" accept=".json">
+                    </div>
+
+
+                    <button id="convertButton" type="submit" class="btn btn-primary">
+                        <div id="loading" class="spinner-border spinner-border-sm me-2 d-none" role="status"></div>
+                        <span id="buttonText">Convert Map</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div id="errorInfo" class="alert alert-danger d-none" role="alert"></div>
+
+        <div id="result" class="card d-none">
+            <div class="card-body">
+                <h5 class="card-title">Conversion</h5>
+                <p id="resultContent"></p>
+                <button id="downloadButton" class="btn btn-success">Download .osz File</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center text-body-secondary p-3">
+        © 2025 <a href="https://cxntered.dev">cxntered</a> • <a
+            href="https://github.com/cxntered/SpareChange/issues">Report bugs here</a>
+    </footer>
+</body>
+
+</html>

@@ -13,15 +13,13 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/cxntered/SpareChange/internal/assets"
 	"github.com/cxntered/SpareChange/pkg/converter"
 	"github.com/cxntered/SpareChange/pkg/types"
 	"github.com/cxntered/SpareChange/pkg/utils"
 	"github.com/disintegration/imaging"
 	flag "github.com/spf13/pflag"
 )
-
-//go:embed assets/background.png
-var background []byte
 
 func main() {
 	beta := flag.BoolP("beta", "b", false, "Whether to fetch a beta Sparebeat map")
@@ -170,7 +168,7 @@ func main() {
 	}
 
 	// create background image
-	img, _, err := image.Decode(bytes.NewReader(background))
+	img, _, err := image.Decode(bytes.NewReader(assets.Background))
 	if err != nil {
 		fmt.Printf("Error decoding background image: %v\n", err)
 		os.Exit(1)
