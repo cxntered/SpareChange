@@ -107,12 +107,14 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuMap, l
 	prevBeats := beats
 	holdNotes := make(map[uint]int) // column index -> start time
 	in24thMode := false
+	inBindZone := false
 
 	for _, elem := range mapData {
 		switch v := elem.(type) {
 		case string:
-			hitObjects := parseSections(v, sbMap.StartTime, &elapsedTime, bpm, &beats, prevBeats, holdNotes, &in24thMode)
+			hitObjects, timingPoints := parseSections(v, sbMap.StartTime, &elapsedTime, bpm, &beats, prevBeats, holdNotes, &in24thMode, &inBindZone)
 			osuFile.HitObjects.List = append(osuFile.HitObjects.List, hitObjects...)
+			osuFile.TimingPoints.List = append(osuFile.TimingPoints.List, timingPoints...)
 
 		case map[string]interface{}:
 			timingPoints := parseMapOptions(v, sbMap.StartTime, elapsedTime, &bpm, beats, baseBPM)
@@ -157,10 +159,12 @@ func parseSections(
 	prevBeats uint,
 	holdNotes map[uint]int,
 	in24thMode *bool,
-) []types.HitObject {
+	inBindZone *bool,
+) ([]types.HitObject, []types.TimingPoint) {
 	rows := strings.Split(section, ",")
 	beatLength := 60 * 1000 / bpm
 	var hitObjects []types.HitObject
+	var timingPoints []types.TimingPoint
 
 	for _, row := range rows {
 		time := startTime + int(*elapsedTime) - int(beatLength/4)
@@ -225,6 +229,32 @@ func parseSections(
 					*in24thMode = false
 					*beats = prevBeats
 					continue
+				} else if note == "[" && !*inBindZone {
+					*inBindZone = true
+					timingPoints = append(timingPoints, types.TimingPoint{
+						Time:        time,
+						BeatLength:  -100,
+						Meter:       *beats,
+						SampleSet:   0,
+						SampleIndex: 0,
+						Volume:      100,
+						Uninherited: false,
+						Effects:     types.EffectKiaiTime,
+					})
+					continue
+				} else if note == "]" && *inBindZone {
+					*inBindZone = false
+					timingPoints = append(timingPoints, types.TimingPoint{
+						Time:        time,
+						BeatLength:  -100,
+						Meter:       *beats,
+						SampleSet:   0,
+						SampleIndex: 0,
+						Volume:      100,
+						Uninherited: false,
+						Effects:     types.EffectNone,
+					})
+					continue
 				}
 			}
 		}
@@ -232,7 +262,7 @@ func parseSections(
 		*elapsedTime += beatLength / float64(*beats)
 	}
 
-	return hitObjects
+	return hitObjects, timingPoints
 }
 
 func parseMapOptions(
