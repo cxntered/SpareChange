@@ -23,7 +23,8 @@ func WriteOsuFile(osuFile types.OsuFile, filePath string) error {
 
 func WriteOsuContent(osuFile types.OsuFile, writer io.Writer) error {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("osu file format v%d\n", osuFile.Version))
+	sb.WriteString("# Converted with github.com/cxntered/SpareChange\n")
+	sb.WriteString(fmt.Sprintf("osu file format v%d\n\n", osuFile.Version))
 
 	// general
 	sb.WriteString("[General]\n")
