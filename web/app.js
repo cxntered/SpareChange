@@ -1,3 +1,5 @@
+const CORS_PROXY = "https://sparechange.cxntered.workers.dev/?";
+
 const go = new Go();
 WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then((result) => {
     go.run(result.instance);
@@ -94,7 +96,7 @@ async function getSparebeatMap(mapId, mapFile, useBeta) {
     }
 
     const mapURL = useBeta
-        ? `https://corsproxy.io/?url=https://beta.sparebeat.com/api/tracks/${mapId}/map` // bypass cors restrictions
+        ? `${CORS_PROXY}https://beta.sparebeat.com/api/tracks/${mapId}/map` // bypass cors restrictions
         : `https://sparebeat.com/play/${mapId}/map`;
 
     try {
@@ -113,7 +115,7 @@ async function getAudioData(mapId, audioFile, useBeta) {
     }
 
     const audioURL = useBeta
-        ? `https://corsproxy.io/?url=https://beta.sparebeat.com/api/tracks/${mapId}/audio` // bypass cors restrictions
+        ? `${CORS_PROXY}https://beta.sparebeat.com/api/tracks/${mapId}/audio` // bypass cors restrictions
         : `https://sparebeat.com/play/${mapId}/music`;
 
     try {
