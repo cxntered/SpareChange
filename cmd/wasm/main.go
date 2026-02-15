@@ -7,6 +7,7 @@ import (
 
 	"github.com/cxntered/SpareChange/pkg/converter"
 	"github.com/cxntered/SpareChange/pkg/types"
+	"github.com/cxntered/SpareChange/pkg/utils"
 )
 
 func main() {
@@ -51,7 +52,7 @@ func convertSparebeatMap(this js.Value, args []js.Value) interface{} {
 		}
 
 		fileName := diff.Metadata.Artist + " - " + diff.Metadata.Title + " (" + diff.Metadata.Creator + ") [" + diff.Metadata.Version + "].osu"
-		files[fileName] = buf.String()
+		files[utils.Sanitize(fileName)] = buf.String()
 	}
 
 	return map[string]interface{}{

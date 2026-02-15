@@ -107,7 +107,7 @@ func main() {
 			diffMap.Metadata.Creator,
 			diffMap.Metadata.Version,
 		)
-		file := filepath.Join(sparebeatDir, fileName)
+		file := filepath.Join(sparebeatDir, utils.Sanitize(fileName))
 		diffFiles = append(diffFiles, file)
 		err = converter.WriteOsuFile(diffMap, file)
 		if err != nil {
@@ -203,7 +203,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = converter.ZipFiles(files, filepath.Join(cwd, fmt.Sprintf("%s - %s.osz", osuMap.Metadata.Artist, osuMap.Metadata.Title)))
+	err = converter.ZipFiles(files, filepath.Join(cwd,
+		utils.Sanitize(fmt.Sprintf("%s - %s.osz",
+			osuMap.Metadata.Artist,
+			osuMap.Metadata.Title,
+		))),
+	)
 	if err != nil {
 		fmt.Printf("Error zipping files: %v\n", err)
 		os.Exit(1)
