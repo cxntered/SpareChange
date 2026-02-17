@@ -1,134 +1,187 @@
 const CORS_PROXY = "https://sparechange.cxntered.workers.dev/?";
+const SPAREBEAT_URL_REGEX = /(beta\.)?sparebeat\.com\/play\/([^/]+)/;
+
+const form = document.getElementById('convertForm');
+const mapUrl = document.getElementById('mapUrl');
+const mapUrlFeedback = document.getElementById('mapUrlFeedback');
+const audioFile = document.getElementById('audioFile');
+const mapFile = document.getElementById('mapFile');
+const convertButton = document.getElementById('convertButton');
+const buttonText = document.getElementById('buttonText');
+const loading = document.getElementById('loading');
+const errorInfo = document.getElementById('errorInfo');
+const result = document.getElementById('result');
+const resultContent = document.getElementById('resultContent');
+const downloadButton = document.getElementById('downloadButton');
 
 const go = new Go();
+
 WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then((result) => {
     go.run(result.instance);
+    convertButton.disabled = false;
+    buttonText.textContent = 'Convert Map';
+    loading.classList.add('d-none');
 }).catch((err) => {
     console.error(err);
+    errorInfo.textContent = 'Failed to load converter. Please refresh the page.';
+    errorInfo.classList.remove('d-none');
+    buttonText.textContent = 'Unavailable';
+    loading.classList.add('d-none');
 });
 
-document.getElementById('convertForm').addEventListener('submit', async (event) => {
+const clearValidationErrors = () => {
+    mapUrl.classList.remove('is-invalid');
+    audioFile.classList.remove('is-invalid');
+    mapFile.classList.remove('is-invalid');
+};
+
+form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    clearValidationErrors();
 
-    const mapIdInput = document.getElementById('mapId');
-    const audioFileInput = document.getElementById('audioFile');
-    const mapFileInput = document.getElementById('mapFile');
+    const mapUrlValue = mapUrl.value.trim();
+    const hasMapUrl = mapUrlValue !== '';
+    const hasAudioFile = audioFile.files.length > 0;
+    const hasMapFile = mapFile.files.length > 0;
 
-    for (const input of [mapIdInput, audioFileInput, mapFileInput]) {
-        input.classList.remove('is-invalid');
+    if (!hasMapUrl && !hasMapFile) {
+        mapUrlFeedback.textContent = hasAudioFile
+            ? 'Please provide a Sparebeat map URL or upload a local map file.'
+            : 'Please provide a valid Sparebeat map URL.';
+        mapUrl.classList.add('is-invalid');
+        return;
     }
 
-    const hasMapId = mapIdInput.value.trim() !== '';
-    const hasAudioFile = audioFileInput.files.length > 0;
-    const hasMapFile = mapFileInput.files.length > 0;
-
-    if ((!hasMapId && !hasMapFile) || (hasAudioFile && !hasMapFile)) {
-        mapIdInput.classList.add('is-invalid');
-        return;
-    } else if (!hasMapId && !hasAudioFile) {
-        audioFileInput.classList.add('is-invalid');
+    if (hasMapFile && !hasAudioFile) {
+        audioFile.classList.add('is-invalid');
         return;
     }
 
     try {
         setLoading(true);
 
-        const mapId = mapIdInput.value.trim();
-        const useBeta = document.getElementById('useBeta').checked;
-        const audioFile = audioFileInput.files[0];
-        const mapFile = mapFileInput.files[0];
+        const audioFileData = audioFile.files[0];
+        const mapFileData = mapFile.files[0];
 
-        const sbMap = await getSparebeatMap(mapId, mapFile, useBeta);
+        let mapId = null;
+        let useBeta = false;
+
+        if (!mapFileData) {
+            const mapUrlMatch = mapUrlValue.match(SPAREBEAT_URL_REGEX);
+            if (!mapUrlMatch) {
+                mapUrlFeedback.textContent = 'Please provide a valid Sparebeat map URL.';
+                mapUrl.classList.add('is-invalid');
+                return;
+            }
+            useBeta = Boolean(mapUrlMatch[1]);
+            mapId = mapUrlMatch[2];
+        }
+
+        buttonText.textContent = mapFileData ? 'Loading map...' : 'Downloading map...';
+        const sbMap = await getSparebeatMap(mapId, mapFileData, useBeta);
+
+        buttonText.textContent = 'Converting map...';
         const osuMap = convertSparebeatMap(JSON.stringify(sbMap));
         if (!osuMap.success) {
             throw new Error(osuMap.error || 'Unknown conversion error.');
         }
-        const audioData = await getAudioData(mapId, audioFile, useBeta);
+
+        buttonText.textContent = audioFileData ? 'Loading audio...' : 'Downloading audio...';
+        const audioData = await getAudioData(mapId, audioFileData, useBeta);
+
+        buttonText.textContent = 'Creating background...'
         const backgroundData = await createBackgroundImage(sbMap);
+
+        buttonText.textContent = 'Creating .osz file...';
         const oszFile = await createOszFile(osuMap, audioData, backgroundData);
 
         const fileName = `${osuMap.metadata.artist} - ${osuMap.metadata.title}`;
 
-        document.getElementById('downloadButton').onclick = () => {
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(oszFile);
-            a.download = `${fileName}.osz`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+        downloadButton.onclick = () => {
+            const url = URL.createObjectURL(oszFile);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${fileName}.osz`;
+            link.click();
+            URL.revokeObjectURL(url);
         };
 
-        document.getElementById('resultContent').innerHTML = `Successfully converted <strong>${fileName}</strong>`;
-        document.getElementById('result').classList.remove('d-none');
+        resultContent.innerHTML = `Successfully converted <strong>${fileName}</strong>`;
+        result.classList.remove('d-none');
     } catch (err) {
         console.error(err);
-        document.getElementById('errorInfo').textContent = err.message;
-        document.getElementById('errorInfo').classList.remove('d-none');
+        errorInfo.textContent = err.message;
+        errorInfo.classList.remove('d-none');
     } finally {
         setLoading(false);
     }
 });
 
-function setLoading(isLoading) {
-    if (isLoading) {
-        document.getElementById('loading').classList.remove('d-none');
-        document.getElementById('buttonText').textContent = 'Converting Map...';
-        document.getElementById('convertButton').disabled = true;
-        document.getElementById('errorInfo').classList.add('d-none');
-        document.getElementById('errorInfo').textContent = '';
-        document.getElementById('result').classList.add('d-none');
-        document.getElementById('resultContent').innerHTML = '';
-    } else {
-        document.getElementById('loading').classList.add('d-none');
-        document.getElementById('buttonText').textContent = 'Convert Map';
-        document.getElementById('convertButton').disabled = false;
-    }
-}
+mapUrl.addEventListener('input', clearValidationErrors);
+audioFile.addEventListener('change', clearValidationErrors);
+mapFile.addEventListener('change', clearValidationErrors);
 
-async function getSparebeatMap(mapId, mapFile, useBeta) {
+const setLoading = (isLoading) => {
+    loading.classList.toggle('d-none', !isLoading);
+    convertButton.disabled = isLoading;
+
+    if (isLoading) {
+        errorInfo.classList.add('d-none');
+        errorInfo.textContent = '';
+        result.classList.add('d-none');
+        resultContent.innerHTML = '';
+    } else {
+        buttonText.textContent = 'Convert Map';
+    }
+};
+
+const fetchFromSparebeat = async (url, resourceType) => {
+    try {
+        const res = await fetch(url);
+        if (res.status === 404) {
+            throw new Error(`${resourceType} not found.`);
+        }
+        if (!res.ok) {
+            throw new Error(`Failed to fetch ${resourceType.toLowerCase()}: ${res.status} ${res.statusText}`);
+        }
+        return res;
+    } catch (err) {
+        throw new Error(`Error fetching ${resourceType.toLowerCase()}: ${err.message}`);
+    }
+};
+
+const getSparebeatMap = async (mapId, mapFile, useBeta) => {
     if (mapFile) {
-        const mapContent = await mapFile.text();
         try {
-            return JSON.parse(mapContent);
+            const map = await mapFile.text();
+            return JSON.parse(map);
         } catch (err) {
             throw new Error(`Invalid map file: ${err.message}`);
         }
     }
 
     const mapURL = useBeta
-        ? `${CORS_PROXY}https://beta.sparebeat.com/api/tracks/${mapId}/map` // bypass cors restrictions
+        ? `${CORS_PROXY}https://beta.sparebeat.com/api/tracks/${mapId}/map`
         : `https://sparebeat.com/play/${mapId}/map`;
 
-    try {
-        const res = await fetch(mapURL);
-        if (res.status === 404) throw new Error(`Map with ID "${mapId}" not found.`);
-        if (!res.ok) throw new Error(`Failed to fetch map: ${res.status} ${res.statusText}`);
-        return await res.json();
-    } catch (err) {
-        throw new Error(`Error fetching map: ${err.message}`);
-    }
-}
+    const res = await fetchFromSparebeat(mapURL, 'Map');
+    return await res.json();
+};
 
-async function getAudioData(mapId, audioFile, useBeta) {
+const getAudioData = async (mapId, audioFile, useBeta) => {
     if (audioFile) {
         return new Uint8Array(await audioFile.arrayBuffer());
     }
 
     const audioURL = useBeta
-        ? `${CORS_PROXY}https://beta.sparebeat.com/api/tracks/${mapId}/audio` // bypass cors restrictions
+        ? `${CORS_PROXY}https://beta.sparebeat.com/api/tracks/${mapId}/audio`
         : `https://sparebeat.com/play/${mapId}/music`;
 
-    try {
-        const res = await fetch(audioURL);
-        if (res.status === 404) throw new Error(`Map with ID "${mapId}" not found.`);
-        if (!res.ok) throw new Error(`Failed to fetch audio: ${res.status} ${res.statusText}`);
-        return new Uint8Array(await res.arrayBuffer());
-    } catch (err) {
-        throw new Error(`Error fetching audio: ${err.message}`);
-    }
-}
+    const res = await fetchFromSparebeat(audioURL, 'Audio');
+    return new Uint8Array(await res.arrayBuffer());
+};
 
-async function createBackgroundImage(sbMap) {
+const createBackgroundImage = async (sbMap) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     canvas.width = 1920;
@@ -138,7 +191,7 @@ async function createBackgroundImage(sbMap) {
     backgroundImg.src = './images/background.png';
     await new Promise((resolve, reject) => {
         backgroundImg.onload = resolve;
-        backgroundImg.onerror = (err) => reject(new Error(`Error loading background image: ${err.message || err}`));
+        backgroundImg.onerror = () => reject(new Error('Error loading background image.'));
     });
     ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
 
@@ -152,13 +205,13 @@ async function createBackgroundImage(sbMap) {
     return new Promise((resolve) => {
         canvas.toBlob((blob) => {
             const reader = new FileReader();
-            reader.onload = (event) => resolve(new Uint8Array(event.target.result));
+            reader.onload = () => resolve(new Uint8Array(reader.result));
             reader.readAsArrayBuffer(blob);
         }, 'image/png');
     });
-}
+};
 
-async function createOszFile(osuMap, audioData, backgroundData) {
+const createOszFile = async (osuMap, audioData, backgroundData) => {
     const files = Object.entries(osuMap.files).map(([fileName, content]) => ({
         name: fileName,
         content: new TextEncoder().encode(content)
@@ -175,4 +228,4 @@ async function createOszFile(osuMap, audioData, backgroundData) {
         compression: "DEFLATE",
         compressionOptions: { level: 6 }
     });
-}
+};

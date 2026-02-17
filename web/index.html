@@ -30,41 +30,34 @@
                 <h5 class="card-title">Map Converter</h5>
                 <form id="convertForm" novalidate>
                     <div class="mb-3">
-                        <label for="mapId" class="form-label">Sparebeat Map ID</label>
-                        <input type="text" class="form-control" id="mapId" placeholder="Enter map ID" required>
-                        <div class="invalid-feedback">
-                            Please provide a Map ID or upload a local map file.
+                        <label for="mapUrl" class="form-label">Sparebeat Map URL</label>
+                        <input type="url" class="form-control" id="mapUrl"
+                            placeholder="https://(beta.)sparebeat.com/play/map" required>
+                        <div class="invalid-feedback" id="mapUrlFeedback">
+                            Please provide a valid Sparebeat map URL.
                         </div>
                     </div>
 
-                    <div class="mb-1 form-check">
-                        <input type="checkbox" class="form-check-input" id="useBeta">
-                        <label class="form-check-label" for="useBeta">Use beta.sparebeat.com</label>
-                    </div>
+                    <details>
+                        <summary class="text-muted mb-3">Advanced options</summary>
 
-                    <div class="d-flex align-items-center mb-1">
-                        <hr class="flex-grow-1">
-                        <span class="text-muted mx-2 mb-1">or</span>
-                        <hr class="flex-grow-1">
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="audioFile" class="form-label">Local Audio File (<code>.mp3</code>)</label>
-                        <input class="form-control" type="file" id="audioFile" accept=".mp3">
-                        <div class="invalid-feedback">
-                            Please upload an audio file.
+                        <div class="mb-3">
+                            <label for="audioFile" class="form-label">Local Audio File (<code>.mp3</code>)</label>
+                            <input class="form-control" type="file" id="audioFile" accept=".mp3">
+                            <div class="invalid-feedback">
+                                Please upload an audio file.
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <label for="mapFile" class="form-label">Local Map File (<code>.json</code>)</label>
-                        <input class="form-control" type="file" id="mapFile" accept=".json">
-                    </div>
+                        <div class="mb-3">
+                            <label for="mapFile" class="form-label">Local Map File (<code>.json</code>)</label>
+                            <input class="form-control" type="file" id="mapFile" accept=".json">
+                        </div>
+                    </details>
 
-
-                    <button id="convertButton" type="submit" class="btn btn-primary">
-                        <div id="loading" class="spinner-border spinner-border-sm me-2 d-none" role="status"></div>
-                        <span id="buttonText">Convert Map</span>
+                    <button id="convertButton" type="submit" class="btn btn-primary" disabled>
+                        <div id="loading" class="spinner-border spinner-border-sm me-2" role="status"></div>
+                        <span id="buttonText">Loading...</span>
                     </button>
                 </form>
             </div>
@@ -82,7 +75,7 @@
     </div>
 
     <footer class="text-center text-body-secondary p-3">
-        © 2025 <a href="https://cxntered.dev">cxntered</a> • <a
+        Made by <a href="https://cxntered.dev">cxntered</a> • <a
             href="https://github.com/cxntered/SpareChange/issues">Report bugs here</a>
     </footer>
 </body>
