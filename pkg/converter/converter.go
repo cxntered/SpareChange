@@ -48,7 +48,7 @@ func ConvertSparebeatToOsu(sbMap types.SparebeatMap) (types.OsuBeatmap, error) {
 		},
 	}
 
-	if isLevelEnabled(sbMap.Level.Easy) {
+	if isLevelEnabled(sbMap.Level.Easy.Value) {
 		easy, err := convertSparebeatDifficulty(sbMap, osuMap, "Easy")
 		if err != nil {
 			return osuMap, err
@@ -56,7 +56,7 @@ func ConvertSparebeatToOsu(sbMap types.SparebeatMap) (types.OsuBeatmap, error) {
 		osuMap.Difficulties = append(osuMap.Difficulties, easy)
 	}
 
-	if isLevelEnabled(sbMap.Level.Normal) {
+	if isLevelEnabled(sbMap.Level.Normal.Value) {
 		normal, err := convertSparebeatDifficulty(sbMap, osuMap, "Normal")
 		if err != nil {
 			return osuMap, err
@@ -64,7 +64,7 @@ func ConvertSparebeatToOsu(sbMap types.SparebeatMap) (types.OsuBeatmap, error) {
 		osuMap.Difficulties = append(osuMap.Difficulties, normal)
 	}
 
-	if isLevelEnabled(sbMap.Level.Hard) {
+	if isLevelEnabled(sbMap.Level.Hard.Value) {
 		hard, err := convertSparebeatDifficulty(sbMap, osuMap, "Hard")
 		if err != nil {
 			return osuMap, err
@@ -85,7 +85,7 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuBeatma
 	osuDiff.Difficulty = osuMap.Difficulty
 	osuDiff.Events = osuMap.Events
 
-	var mapData []interface{}
+	var mapData []types.MapEntry
 	switch levelName {
 	case "Easy":
 		mapData = sbMap.Map.Easy
@@ -98,7 +98,7 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuBeatma
 	}
 
 	var elapsedTime float64 = 0
-	bpm := getBPM(sbMap.BPM)
+	bpm := getBPM(sbMap.BPM.Value)
 	baseBPM := bpm
 	var beats uint = 4
 	if sbMap.Beats != 0 {
@@ -110,14 +110,17 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuBeatma
 	inBindZone := false
 
 	for _, elem := range mapData {
-		switch v := elem.(type) {
-		case string:
-			hitObjects, timingPoints := parseSections(v, sbMap.StartTime, &elapsedTime, bpm, &beats, prevBeats, holdNotes, &in24thMode, &inBindZone)
+		switch {
+		case elem.Section != "":
+			hitObjects, timingPoints := parseSections(elem.Section, sbMap.StartTime, &elapsedTime, bpm, &beats, prevBeats, holdNotes, &in24thMode, &inBindZone)
 			osuDiff.HitObjects.List = append(osuDiff.HitObjects.List, hitObjects...)
 			osuDiff.TimingPoints.List = append(osuDiff.TimingPoints.List, timingPoints...)
 
-		case map[string]interface{}:
-			timingPoints := parseMapOptions(v, sbMap.StartTime, elapsedTime, &bpm, beats, baseBPM)
+		case elem.Options != nil:
+			timingPoints, err := parseMapOptions(elem.Options, sbMap.StartTime, elapsedTime, &bpm, beats, baseBPM)
+			if err != nil {
+				return osuDiff, err
+			}
 			for _, timingPoint := range timingPoints {
 				if timingPoint.Time < sbMap.StartTime && len(osuDiff.TimingPoints.List) == 0 {
 					osuDiff.TimingPoints.List = append(osuDiff.TimingPoints.List, types.TimingPoint{
@@ -266,71 +269,70 @@ func parseSections(
 }
 
 func parseMapOptions(
-	mapOptions map[string]interface{},
+	mapOptions json.RawMessage,
 	startTime int,
 	elapsedTime float64,
 	bpm *float64,
 	beats uint,
 	baseBPM float64,
-) []types.TimingPoint {
-	var opts types.MapOptions
-	mapBytes, _ := json.Marshal(mapOptions)
-
-	if err := json.Unmarshal(mapBytes, &opts); err == nil {
-		if opts.BPM != nil {
-			if *opts.BPM == 0 {
-				*bpm = 1e-6 // bpm cannot be zero, so we set it to a small value (0.000001)
-			} else {
-				*bpm = *opts.BPM
-			}
+) ([]types.TimingPoint, error) {
+	opts, err := types.ParseMapOptions(mapOptions)
+	if err != nil {
+		return nil, err
+	}
+	if opts.BPM != nil {
+		if *opts.BPM == 0 {
+			*bpm = 0.000001 // bpm cannot be zero, so we set it to a small value instead
+		} else {
+			*bpm = *opts.BPM
 		}
-		beatLength := 60 * 1000 / *bpm
-		time := startTime + int(elapsedTime) - int(beatLength/4)
+	}
+	beatLength := 60 * 1000 / *bpm
+	time := startTime + int(elapsedTime) - int(beatLength/4)
 
-		if opts.BPM != nil {
-			return []types.TimingPoint{
-				{
-					Time:        time,
-					BeatLength:  beatLength,
-					Meter:       beats,
-					SampleSet:   0,
-					SampleIndex: 0,
-					Volume:      100,
-					Uninherited: true,
-					Effects:     types.EffectNone,
-				},
-				{
-					Time:        time,
-					BeatLength:  -100 / (baseBPM / *bpm), // keep scroll speed relative to base BPM
-					Meter:       beats,
-					SampleSet:   0,
-					SampleIndex: 0,
-					Volume:      100,
-					Uninherited: false,
-					Effects:     types.EffectNone,
-				},
-			}
-		} else if opts.Speed != nil {
-			var speed float64
-			if *opts.Speed == 0 {
-				speed = 1e-6 // speed cannot be zero, so we set it to a small value (0.000001)
-			} else {
-				speed = *opts.Speed
-			}
-			return []types.TimingPoint{{
+	if opts.BPM != nil {
+		return []types.TimingPoint{
+			{
 				Time:        time,
-				BeatLength:  -100 / speed,
+				BeatLength:  beatLength,
+				Meter:       beats,
+				SampleSet:   0,
+				SampleIndex: 0,
+				Volume:      100,
+				Uninherited: true,
+				Effects:     types.EffectNone,
+			},
+			{
+				Time:        time,
+				BeatLength:  -100 / (baseBPM / *bpm), // keep scroll speed relative to base BPM
 				Meter:       beats,
 				SampleSet:   0,
 				SampleIndex: 0,
 				Volume:      100,
 				Uninherited: false,
 				Effects:     types.EffectNone,
-			}}
+			},
+		}, nil
+	} else if opts.Speed != nil {
+		var speed float64
+		if *opts.Speed == 0 {
+			speed = 0.000001 // speed cannot be zero, so we set it to a small value instead
+		} else {
+			speed = *opts.Speed
 		}
+		return []types.TimingPoint{{
+			Time:        time,
+			BeatLength:  -100 / speed,
+			Meter:       beats,
+			SampleSet:   0,
+			SampleIndex: 0,
+			Volume:      100,
+			Uninherited: false,
+			Effects:     types.EffectNone,
+		}}, nil
 	}
 
-	return []types.TimingPoint{}
+	return []types.TimingPoint{}, nil
 }
 
 func isLevelEnabled(val interface{}) bool {

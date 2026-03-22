@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"syscall/js"
 
 	"github.com/cxntered/SpareChange/pkg/converter"
@@ -23,8 +22,7 @@ func convertSparebeatMap(this js.Value, args []js.Value) interface{} {
 		}
 	}
 
-	var sbMap types.SparebeatMap
-	err := json.Unmarshal([]byte(args[0].String()), &sbMap)
+	sbMap, err := types.ParseSparebeatMap([]byte(args[0].String()))
 	if err != nil {
 		return map[string]interface{}{
 			"success": false,

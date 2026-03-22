@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	_ "embed"
-	"encoding/json"
 	"fmt"
 	"image"
 	"image/color"
@@ -49,7 +48,7 @@ func main() {
 			fmt.Printf("Error reading map file: %v\n", err)
 			os.Exit(1)
 		}
-		err = json.Unmarshal(body, &sbMap)
+		sbMap, err = types.ParseSparebeatMap(body)
 		if err != nil {
 			fmt.Printf("Error parsing map JSON: %v\n", err)
 			os.Exit(1)
@@ -73,7 +72,7 @@ func main() {
 			fmt.Printf("Error reading response body: %v\n", err)
 			os.Exit(1)
 		}
-		err = json.Unmarshal(body, &sbMap)
+		sbMap, err = types.ParseSparebeatMap(body)
 		if err != nil {
 			fmt.Printf("Error unmarshalling response body: %v\n", err)
 			os.Exit(1)
