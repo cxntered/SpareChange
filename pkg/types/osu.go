@@ -1,15 +1,14 @@
 package types
 
-// many sections can be shared between different difficulties
-type OsuMap struct {
+type OsuBeatmap struct {
 	General      GeneralSection
 	Metadata     MetadataSection
 	Difficulty   DifficultySection
 	Events       EventsSection
-	Difficulties []OsuFile
+	Difficulties []OsuDifficulty
 }
 
-type OsuFile struct {
+type OsuDifficulty struct {
 	Version int8
 
 	General      GeneralSection

@@ -11,51 +11,51 @@ import (
 	"github.com/cxntered/SpareChange/pkg/types"
 )
 
-func WriteOsuFile(osuFile types.OsuFile, filePath string) error {
+func WriteOsuFile(osuDiff types.OsuDifficulty, filePath string) error {
 	f, err := os.Create(filePath)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	return WriteOsuContent(osuFile, f)
+	return WriteOsuContent(osuDiff, f)
 }
 
-func WriteOsuContent(osuFile types.OsuFile, writer io.Writer) error {
+func WriteOsuContent(osuDiff types.OsuDifficulty, writer io.Writer) error {
 	var sb strings.Builder
-	sb.WriteString("# Converted with github.com/cxntered/SpareChange\n")
-	sb.WriteString(fmt.Sprintf("osu file format v%d\n\n", osuFile.Version))
+	sb.WriteString("// Converted with github.com/cxntered/SpareChange\n")
+	sb.WriteString(fmt.Sprintf("osu file format v%d\n\n", osuDiff.Version))
 
 	// general
 	sb.WriteString("[General]\n")
-	sb.WriteString(fmt.Sprintf("AudioFilename: %s\n", osuFile.General.AudioFilename))
-	sb.WriteString(fmt.Sprintf("Mode: %d\n", osuFile.General.Mode))
+	sb.WriteString(fmt.Sprintf("AudioFilename: %s\n", osuDiff.General.AudioFilename))
+	sb.WriteString(fmt.Sprintf("Mode: %d\n", osuDiff.General.Mode))
 	sb.WriteString("\n")
 
 	// metadata
 	sb.WriteString("[Metadata]\n")
-	sb.WriteString(fmt.Sprintf("Title: %s\n", osuFile.Metadata.Title))
-	sb.WriteString(fmt.Sprintf("TitleUnicode: %s\n", osuFile.Metadata.TitleUnicode))
-	sb.WriteString(fmt.Sprintf("Artist: %s\n", osuFile.Metadata.Artist))
-	sb.WriteString(fmt.Sprintf("ArtistUnicode: %s\n", osuFile.Metadata.ArtistUnicode))
-	sb.WriteString(fmt.Sprintf("Creator: %s\n", osuFile.Metadata.Creator))
-	sb.WriteString(fmt.Sprintf("Version: %s\n", osuFile.Metadata.Version))
-	sb.WriteString(fmt.Sprintf("Source: %s\n", osuFile.Metadata.Source))
+	sb.WriteString(fmt.Sprintf("Title: %s\n", osuDiff.Metadata.Title))
+	sb.WriteString(fmt.Sprintf("TitleUnicode: %s\n", osuDiff.Metadata.TitleUnicode))
+	sb.WriteString(fmt.Sprintf("Artist: %s\n", osuDiff.Metadata.Artist))
+	sb.WriteString(fmt.Sprintf("ArtistUnicode: %s\n", osuDiff.Metadata.ArtistUnicode))
+	sb.WriteString(fmt.Sprintf("Creator: %s\n", osuDiff.Metadata.Creator))
+	sb.WriteString(fmt.Sprintf("Version: %s\n", osuDiff.Metadata.Version))
+	sb.WriteString(fmt.Sprintf("Source: %s\n", osuDiff.Metadata.Source))
 	sb.WriteString("\n")
 
 	// difficulty
 	sb.WriteString("[Difficulty]\n")
-	sb.WriteString(fmt.Sprintf("HPDrainRate: %.1f\n", osuFile.Difficulty.HPDrainRate))
-	sb.WriteString(fmt.Sprintf("CircleSize: %.1f\n", osuFile.Difficulty.CircleSize))
-	sb.WriteString(fmt.Sprintf("OverallDifficulty: %.1f\n", osuFile.Difficulty.OverallDifficulty))
-	sb.WriteString(fmt.Sprintf("ApproachRate: %.1f\n", osuFile.Difficulty.ApproachRate))
-	sb.WriteString(fmt.Sprintf("SliderMultiplier: %.1f\n", osuFile.Difficulty.SliderMultiplier))
-	sb.WriteString(fmt.Sprintf("SliderTickRate: %.1f\n", osuFile.Difficulty.SliderTickRate))
+	sb.WriteString(fmt.Sprintf("HPDrainRate: %.1f\n", osuDiff.Difficulty.HPDrainRate))
+	sb.WriteString(fmt.Sprintf("CircleSize: %.1f\n", osuDiff.Difficulty.CircleSize))
+	sb.WriteString(fmt.Sprintf("OverallDifficulty: %.1f\n", osuDiff.Difficulty.OverallDifficulty))
+	sb.WriteString(fmt.Sprintf("ApproachRate: %.1f\n", osuDiff.Difficulty.ApproachRate))
+	sb.WriteString(fmt.Sprintf("SliderMultiplier: %.1f\n", osuDiff.Difficulty.SliderMultiplier))
+	sb.WriteString(fmt.Sprintf("SliderTickRate: %.1f\n", osuDiff.Difficulty.SliderTickRate))
 	sb.WriteString("\n")
 
 	// events
 	sb.WriteString("[Events]\n")
-	for _, event := range osuFile.Events.List {
+	for _, event := range osuDiff.Events.List {
 		switch event.EventType {
 		case types.EventTypeBackground:
 			sb.WriteString(fmt.Sprintf("0,%d,%s,%d,%d\n",
@@ -82,7 +82,7 @@ func WriteOsuContent(osuFile types.OsuFile, writer io.Writer) error {
 
 	// timing points
 	sb.WriteString("[TimingPoints]\n")
-	for _, timingPoint := range osuFile.TimingPoints.List {
+	for _, timingPoint := range osuDiff.TimingPoints.List {
 		var uninherited uint8 = 0
 		if timingPoint.Uninherited {
 			uninherited = 1
@@ -103,7 +103,7 @@ func WriteOsuContent(osuFile types.OsuFile, writer io.Writer) error {
 
 	// hitobjects
 	sb.WriteString("[HitObjects]\n")
-	for _, hitObject := range osuFile.HitObjects.List {
+	for _, hitObject := range osuDiff.HitObjects.List {
 		hitSample := fmt.Sprintf("%d:%d:%d:%d:",
 			hitObject.HitSample.NormalSet,
 			hitObject.HitSample.AdditionSet,

@@ -9,8 +9,8 @@ import (
 	"github.com/cxntered/SpareChange/pkg/types"
 )
 
-func ConvertSparebeatToOsu(sbMap types.SparebeatMap) (types.OsuMap, error) {
-	var osuMap types.OsuMap
+func ConvertSparebeatToOsu(sbMap types.SparebeatMap) (types.OsuBeatmap, error) {
+	var osuMap types.OsuBeatmap
 
 	osuMap.General = types.GeneralSection{
 		AudioFilename: "audio.mp3",
@@ -75,15 +75,15 @@ func ConvertSparebeatToOsu(sbMap types.SparebeatMap) (types.OsuMap, error) {
 	return osuMap, nil
 }
 
-func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuMap, levelName string) (types.OsuFile, error) {
-	var osuFile types.OsuFile
+func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuBeatmap, levelName string) (types.OsuDifficulty, error) {
+	var osuDiff types.OsuDifficulty
 
-	osuFile.Version = 14
-	osuFile.General = osuMap.General
-	osuFile.Metadata = osuMap.Metadata
-	osuFile.Metadata.Version = levelName
-	osuFile.Difficulty = osuMap.Difficulty
-	osuFile.Events = osuMap.Events
+	osuDiff.Version = 14
+	osuDiff.General = osuMap.General
+	osuDiff.Metadata = osuMap.Metadata
+	osuDiff.Metadata.Version = levelName
+	osuDiff.Difficulty = osuMap.Difficulty
+	osuDiff.Events = osuMap.Events
 
 	var mapData []interface{}
 	switch levelName {
@@ -113,14 +113,14 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuMap, l
 		switch v := elem.(type) {
 		case string:
 			hitObjects, timingPoints := parseSections(v, sbMap.StartTime, &elapsedTime, bpm, &beats, prevBeats, holdNotes, &in24thMode, &inBindZone)
-			osuFile.HitObjects.List = append(osuFile.HitObjects.List, hitObjects...)
-			osuFile.TimingPoints.List = append(osuFile.TimingPoints.List, timingPoints...)
+			osuDiff.HitObjects.List = append(osuDiff.HitObjects.List, hitObjects...)
+			osuDiff.TimingPoints.List = append(osuDiff.TimingPoints.List, timingPoints...)
 
 		case map[string]interface{}:
 			timingPoints := parseMapOptions(v, sbMap.StartTime, elapsedTime, &bpm, beats, baseBPM)
 			for _, timingPoint := range timingPoints {
-				if timingPoint.Time < sbMap.StartTime && len(osuFile.TimingPoints.List) == 0 {
-					osuFile.TimingPoints.List = append(osuFile.TimingPoints.List, types.TimingPoint{
+				if timingPoint.Time < sbMap.StartTime && len(osuDiff.TimingPoints.List) == 0 {
+					osuDiff.TimingPoints.List = append(osuDiff.TimingPoints.List, types.TimingPoint{
 						Time:        0,
 						BeatLength:  60 * 1000 / bpm,
 						Meter:       beats,
@@ -131,12 +131,12 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuMap, l
 						Effects:     types.EffectOmitFirstBarLine,
 					})
 				}
-				osuFile.TimingPoints.List = append(osuFile.TimingPoints.List, timingPoint)
+				osuDiff.TimingPoints.List = append(osuDiff.TimingPoints.List, timingPoint)
 			}
 		}
 	}
 
-	osuFile.TimingPoints.List = append(osuFile.TimingPoints.List, types.TimingPoint{
+	osuDiff.TimingPoints.List = append(osuDiff.TimingPoints.List, types.TimingPoint{
 		Time:        sbMap.StartTime,
 		BeatLength:  60 * 1000 / bpm,
 		Meter:       beats,
@@ -147,7 +147,7 @@ func convertSparebeatDifficulty(sbMap types.SparebeatMap, osuMap types.OsuMap, l
 		Effects:     types.EffectNone,
 	})
 
-	return osuFile, nil
+	return osuDiff, nil
 }
 
 func parseSections(
